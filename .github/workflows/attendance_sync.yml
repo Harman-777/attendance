@@ -1,0 +1,41 @@
+name: Ultra Portal Background Attendance Sync
+
+on:
+  # Runs automatically every hour from 9:00 AM to 5:00 PM IST (03:30 to 11:30 UTC), Monday - Saturday
+  schedule:
+    - cron: '30 3-11 * * 1-6'
+
+  # Allows you to trigger a sync manually with 1 click from the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  sync-attendance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Set Up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Supabase Attendance Sync & Push Notifier
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_SMTP_EMAIL: ${{ secrets.ALERT_SMTP_EMAIL }}
+          ALERT_SMTP_PASS: ${{ secrets.ALERT_SMTP_PASS }}
+        run: python sync_worker.py

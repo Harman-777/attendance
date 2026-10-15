@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#38bdf8">
+    <link rel="manifest" href="/static/manifest.json">
+    <title>Ultra Portal - Login</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #090d16;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: clamp(16px, 4vw, 24px);
+        }
+        .login-card {
+            background: #111827;
+            padding: clamp(28px, 6vw, 42px) clamp(20px, 5vw, 36px);
+            border-radius: clamp(14px, 3vw, 20px);
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            border: 1px solid #1f2937;
+        }
+        .badge {
+            display: inline-block;
+            margin: 0 auto 14px auto;
+            background: rgba(56, 189, 248, 0.12);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+        .text-center { text-align: center; }
+        h1 {
+            margin: 0;
+            font-size: clamp(1.5rem, 4vw, 1.85rem);
+            color: #f8fafc;
+            font-weight: 800;
+        }
+        p.subtitle {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin: 8px 0 26px 0;
+            line-height: 1.4;
+        }
+        .group { margin-bottom: 18px; }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.88rem;
+            color: #e5e7eb;
+            font-weight: 600;
+        }
+        input {
+            width: 100%;
+            height: 48px;
+            padding: 0 14px;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        input:focus { border-color: #38bdf8; }
+        button {
+            width: 100%;
+            height: 48px;
+            background: #38bdf8;
+            color: #090d16;
+            font-weight: 800;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.15s;
+        }
+        button:hover { background: #0ea5e9; color: white; }
+        button:active { transform: scale(0.98); }
+        .error {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 0.88rem;
+        }
+        .offline-note {
+            margin-top: 22px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #64748b;
+            line-height: 1.45;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="text-center">
+            <span class="badge">PWA APP &amp; OFFLINE READY</span>
+            <h1>⚡ Ultra Portal</h1>
+            <p class="subtitle">Attendance Intelligence, Analytics &amp; Student Workspace</p>
+        </div>
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+        <form method="POST">
+            <div class="group">
+                <label>Student ID / Roll Number</label>
+                <input type="text" name="student_id" placeholder="e.g. 2412234" required autocomplete="off" inputmode="numeric">
+            </div>
+            <div class="group">
+                <label>Portal Password</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit">Launch Ultra Workspace</button>
+        </form>
+        <div class="offline-note">
+            🛡️ Offline Snapshot Protection Active: If the college portal is down, your last synced profile loads automatically.
+        </div>
+    </div>
+</body>
+</html>
