@@ -11,7 +11,7 @@ RESULTS_URL = "https://agclms.in/DashBoardStudent/Results"
 
 
 class PortalClient:
-    def __init__(self, student_id, password):
+    def __init__(self, student_id, password, cookies=None):
         self.student_id = student_id
         self.password = password
         self.session = requests.Session()
@@ -19,6 +19,12 @@ class PortalClient:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         })
         self.logged_in = False
+        if cookies:
+            self.session.cookies.update(cookies)
+            self.logged_in = True
+
+    def get_cookies(self):
+        return self.session.cookies.get_dict()
 
     def authenticate(self):
         try:
@@ -40,12 +46,12 @@ class PortalClient:
                 return False, "Invalid Student ID or Password."
 
             self.logged_in = True
+            self._cached_dash_html = dash_res.text
             return True, None
         except Exception as e:
             return False, f"Portal unreachable: {str(e)}"
 
     def change_password(self, old_password, new_password, confirm_password):
-        """Submits a password change request directly to the college portal."""
         if not self.logged_in:
             ok, err = self.authenticate()
             if not ok:
@@ -85,7 +91,6 @@ class PortalClient:
                 elif itype == "password" or "pass" in name.lower():
                     pwd_inputs.append(name)
 
-            # Map old, new, and confirm fields dynamically
             if len(pwd_inputs) >= 3:
                 payload[pwd_inputs[0]] = old_password
                 payload[pwd_inputs[1]] = new_password
@@ -128,7 +133,7 @@ class PortalClient:
             for url in candidate_urls:
                 if not url:
                     continue
-                r = self.session.get(url, timeout=10)
+                r = self.session.get(url, timeout=8)
                 if r.status_code == 200 and "StudentLogin" not in r.url and len(r.text) > 500:
                     if "Batch" in r.text or "Father" in r.text or "Mobile" in r.text:
                         p_soup = BeautifulSoup(r.text, "html.parser")
@@ -202,7 +207,7 @@ class PortalClient:
 
     def get_exam_results(self):
         try:
-            res = self.session.get(RESULTS_URL, timeout=10)
+            res = self.session.get(RESULTS_URL, timeout=8)
             soup = BeautifulSoup(res.text, "html.parser")
             select = soup.find("select", {"name": "ClassCode"})
             if not select:
@@ -220,7 +225,7 @@ class PortalClient:
             def fetch_single_sem(item):
                 code, sem_name = item
                 sem_url = f"{RESULTS_URL}?ClassCode={code}"
-                r = self.session.get(sem_url, timeout=10)
+                r = self.session.get(sem_url, timeout=8)
                 s = BeautifulSoup(r.text, "html.parser")
                 tables = []
                 extracted_grades = []
@@ -237,7 +242,6 @@ class PortalClient:
                     if rows:
                         tables.append(rows)
 
-                # Calculate estimated SGPA from letter grades or numeric marks
                 sgpa = round(sum(extracted_grades) / len(extracted_grades), 2) if extracted_grades else 0.0
                 return {"code": code, "semester": sem_name, "tables": tables, "sgpa": sgpa}
 
@@ -254,7 +258,7 @@ class PortalClient:
                 txt = a.get_text(strip=True).lower()
                 if ("fee" in txt or "fee" in href.lower()) and href and href != "#":
                     f_url = urljoin(DASHBOARD_URL + "/", href)
-                    r = self.session.get(f_url, timeout=10)
+                    r = self.session.get(f_url, timeout=8)
                     s = BeautifulSoup(r.text, "html.parser")
                     for table in s.find_all("table"):
                         rows = []
@@ -268,22 +272,42 @@ class PortalClient:
         except Exception:
             return []
 
-    def get_full_profile(self):
-        if not self.logged_in:
-            success, err = self.authenticate()
-            if not success:
-                return None, err
+    def get_full_profile(self, fast_mode=False):
+        """
+        If fast_mode=True, only scrapes Attendance subjects (~2 seconds) so the
+        Attendance & Simulator tab renders immediately.
+        """
+        dash_html = getattr(self, "_cached_dash_html", None)
+        if not dash_html:
+            if not self.logged_in:
+                success, err = self.authenticate()
+                if not success:
+                    return None, err
+                dash_html = getattr(self, "_cached_dash_html", None)
+
+            if not dash_html:
+                dash_res = self.session.get(DASHBOARD_URL, timeout=10)
+                if "StudentLogin" in dash_res.url or "AttendanceReport" not in dash_res.text:
+                    success, err = self.authenticate()
+                    if not success:
+                        return None, err
+                    dash_html = getattr(self, "_cached_dash_html", "")
+                else:
+                    dash_html = dash_res.text
 
         today_str = datetime.now().strftime("%d-%m-%Y")
         today_pretty = datetime.now().strftime("%a, %d %b %Y")
         sync_time = datetime.now().strftime("%d %b %Y, %I:%M %p")
 
-        dash_res = self.session.get(DASHBOARD_URL, timeout=10)
-        dash_soup = BeautifulSoup(dash_res.text, "html.parser")
+        dash_soup = BeautifulSoup(dash_html, "html.parser")
         text = dash_soup.get_text(" ", strip=True)
 
         incharge_match = re.search(r"Incharge\s*Name\s*:\s*([A-Za-z\s\.]+?)(?:Subjects|Session|$)", text, re.I)
         incharge_name = incharge_match.group(1).strip() if incharge_match else "Vinod Kumar"
+
+        # Try extracting student name directly from dashboard header for fast_mode
+        name_match = re.search(r"Welcome\s+([A-Za-z\s]+?)(?:\||Student|Roll|Incharge|$)", text, re.I)
+        student_name = name_match.group(1).strip() if name_match else "Student"
 
         subjects = []
         seen_urls = set()
@@ -304,7 +328,7 @@ class PortalClient:
 
         def fetch_subject(item):
             name, url = item
-            r = self.session.get(url, timeout=10)
+            r = self.session.get(url, timeout=8)
             s = BeautifulSoup(r.text, "html.parser")
             present, absent = 0, 0
             records = []
@@ -365,11 +389,34 @@ class PortalClient:
                 if rec["date"] == today_str:
                     today_attendance.append(rec)
 
-        results_data = self.get_exam_results()
-        profile_data = self.get_student_profile(dash_soup)
-        fees_data = self.get_fees(dash_soup)
+        if fast_mode:
+            return {
+                "student_id": self.student_id,
+                "student_name": student_name,
+                "student_email": "",
+                "incharge": incharge_name,
+                "today_date": today_pretty,
+                "last_synced": sync_time + " (Fast Sync)",
+                "is_offline": False,
+                "partial_load": True,
+                "today_attendance": today_attendance,
+                "calendar_records": all_records,
+                "subjects": subject_results,
+                "results": [],
+                "profile": {"photo_url": None, "details": []},
+                "fees": []
+            }, None
 
-        student_name = "Harman"
+        # Fetch Results, Profile, and Fees in parallel so background sync is also 3x faster
+        with ThreadPoolExecutor(max_workers=3) as extra_exec:
+            f_results = extra_exec.submit(self.get_exam_results)
+            f_profile = extra_exec.submit(self.get_student_profile, dash_soup)
+            f_fees = extra_exec.submit(self.get_fees, dash_soup)
+
+            results_data = f_results.result()
+            profile_data = f_profile.result()
+            fees_data = f_fees.result()
+
         student_email = ""
         for k, v in profile_data.get("details", []):
             if k.lower() == "name":
@@ -385,6 +432,7 @@ class PortalClient:
             "today_date": today_pretty,
             "last_synced": sync_time,
             "is_offline": False,
+            "partial_load": False,
             "today_attendance": today_attendance,
             "calendar_records": all_records,
             "subjects": subject_results,

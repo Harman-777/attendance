@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link rel="stylesheet" href="/static/style.css">
     <title>Ultra Student Workspace</title>
 </head>
+
 <body>
 
     <!-- Mobile Top Navigation Header -->
@@ -20,7 +22,8 @@
             </div>
         </div>
         <div class="mobile-actions">
-            <button type="button" class="mobile-icon-btn trigger-export-pdf" title="Export PDF Report" aria-label="Export PDF">📄</button>
+            <button type="button" class="mobile-icon-btn trigger-export-pdf" title="Export PDF Report"
+                aria-label="Export PDF">📄</button>
             <a href="/logout" class="mobile-icon-btn mobile-logout" title="Logout" aria-label="Logout">🚪</a>
         </div>
     </header>
@@ -72,11 +75,13 @@
         <header class="main-header">
             <div class="header-student-info">
                 <h1>Welcome back, {{ data.student_name }}!</h1>
-                <p class="header-student-meta">Student ID: <b class="text-cyan">{{ data.student_id }}</b> <span class="meta-dot">•</span> Faculty Incharge: <b>{{ data.incharge }}</b></p>
+                <p class="header-student-meta">Student ID: <b class="text-cyan">{{ data.student_id }}</b> <span
+                        class="meta-dot">•</span> Faculty Incharge: <b>{{ data.incharge }}</b></p>
                 {% if data.is_offline %}
-                    <span class="sync-pill sync-offline">⚡ OFFLINE SNAPSHOT MODE (Last Synced: {{ data.last_synced }})</span>
+                <span class="sync-pill sync-offline">⚡ OFFLINE SNAPSHOT MODE (Last Synced: {{ data.last_synced
+                    }})</span>
                 {% else %}
-                    <span class="sync-pill sync-live">● LIVE PORTAL SYNC ({{ data.last_synced }})</span>
+                <span class="sync-pill sync-live">● LIVE PORTAL SYNC ({{ data.last_synced }})</span>
                 {% endif %}
             </div>
             <div class="header-stats-card">
@@ -100,8 +105,10 @@
                 <div>
                     <b style="font-size: 1rem;">⚠️ 75% Danger Zone Warning!</b>
                     <p style="font-size: 0.88rem; margin-top: 4px;">
-                        {{ danger_subjects | length }} subject(s) are either below 75% or within 2 skips of the danger threshold:
-                        <b>{% for ds in danger_subjects %}{{ ds.name }}{% if not loop.last %}, {% endif %}{% endfor %}</b>
+                        {{ danger_subjects | length }} subject(s) are either below 75% or within 2 skips of the danger
+                        threshold:
+                        <b>{% for ds in danger_subjects %}{{ ds.name }}{% if not loop.last %}, {% endif %}{% endfor
+                            %}</b>
                     </p>
                 </div>
                 <button type="button" class="btn-dispute" id="btn-jump-vacation">Plan Recovery</button>
@@ -133,36 +140,38 @@
                     <div class="today-pill">
                         <span class="today-subj-name">{{ item.subject }}</span>
                         <div class="today-status-wrap">
-                            <span class="{% if item.status == 'PRESENT' %}badge-present{% else %}badge-absent{% endif %}">{{ item.status }}</span>
+                            <span
+                                class="{% if item.status == 'PRESENT' %}badge-present{% else %}badge-absent{% endif %}">{{
+                                item.status }}</span>
                             {% if item.status == 'ABSENT' %}
-                            <button type="button" class="btn-dispute-pill open-dispute-btn" data-subject="{{ item.subject }}" data-date="{{ item.date }}">Dispute</button>
+                            <button type="button" class="btn-dispute-pill open-dispute-btn"
+                                data-subject="{{ item.subject }}" data-date="{{ item.date }}">Dispute</button>
                             {% endif %}
                         </div>
                     </div>
                     {% endfor %}
                 </div>
                 {% else %}
-                <p style="color: #9ca3af; font-size: 0.92rem;">No lectures marked for today ({{ data.today_date }}) yet. Any new absent marks will trigger an instant alert.</p>
+                <p style="color: #9ca3af; font-size: 0.92rem;">No lectures marked for today ({{ data.today_date }}) yet.
+                    Any new absent marks will trigger an instant alert.</p>
                 {% endif %}
             </div>
 
             <div class="subject-grid">
                 {% for s in data.subjects %}
                 <div class="sub-card {% if s.danger_level == 'critical' %}danger-border{% elif s.danger_level == 'warning' %}warn-border{% endif %}"
-                     data-idx="{{ loop.index0 }}"
-                     data-name="{{ s.name }}"
-                     data-present="{{ s.present }}"
-                     data-total="{{ s.total }}"
-                     data-orig-p="{{ s.present }}"
-                     data-orig-t="{{ s.total }}">
+                    data-idx="{{ loop.index0 }}" data-name="{{ s.name }}" data-present="{{ s.present }}"
+                    data-total="{{ s.total }}" data-orig-p="{{ s.present }}" data-orig-t="{{ s.total }}">
                     <h4>{{ s.name }}</h4>
-                    <div class="pct-display {% if s.pct >= 75 %}pct-safe{% else %}pct-danger{% endif %}" id="pct-{{ loop.index0 }}">{{ s.pct }}%</div>
+                    <div class="pct-display {% if s.pct >= 75 %}pct-safe{% else %}pct-danger{% endif %}"
+                        id="pct-{{ loop.index0 }}">{{ s.pct }}%</div>
 
                     <div class="progress-track">
                         <div class="progress-fill" id="bar-{{ loop.index0 }}" data-pct="{{ s.pct }}"></div>
                     </div>
 
-                    <p style="color:#9ca3af; font-size:0.88rem;" id="count-{{ loop.index0 }}">Attended: <b>{{ s.present }}</b> / <b>{{ s.total }}</b> classes</p>
+                    <p style="color:#9ca3af; font-size:0.88rem;" id="count-{{ loop.index0 }}">Attended: <b>{{ s.present
+                            }}</b> / <b>{{ s.total }}</b> classes</p>
 
                     <div class="impact-strip">
                         <span style="color: #4ade80;" id="next-att-{{ loop.index0 }}">↗ Next Attend: --%</span>
@@ -172,8 +181,10 @@
                     <div class="sim-box" id="status-box-{{ loop.index0 }}">{{ s.status_msg }}</div>
 
                     <div class="btn-group">
-                        <button type="button" class="btn-att sim-action" data-idx="{{ loop.index0 }}" data-add-p="1" data-add-t="1">+1 Attend</button>
-                        <button type="button" class="btn-skip sim-action" data-idx="{{ loop.index0 }}" data-add-p="0" data-add-t="1">+1 Skip</button>
+                        <button type="button" class="btn-att sim-action" data-idx="{{ loop.index0 }}" data-add-p="1"
+                            data-add-t="1">+1 Attend</button>
+                        <button type="button" class="btn-skip sim-action" data-idx="{{ loop.index0 }}" data-add-p="0"
+                            data-add-t="1">+1 Skip</button>
                         <button type="button" class="btn-res sim-reset" data-idx="{{ loop.index0 }}">Reset</button>
                     </div>
                 </div>
@@ -184,16 +195,21 @@
         <!-- 2. MULTI-DAY VACATION / MASS-BUNK PLANNER TAB -->
         <div id="tab-vacation" class="tab-panel">
             <div class="card" style="margin-bottom: 24px;">
-                <h2 style="font-size: 1.3rem; color: #38bdf8; margin-bottom: 8px;">🏖️ Multi-Day Vacation & Mass-Bunk Planner</h2>
+                <h2 style="font-size: 1.3rem; color: #38bdf8; margin-bottom: 8px;">🏖️ Multi-Day Vacation & Mass-Bunk
+                    Planner</h2>
                 <p style="color: #9ca3af; font-size: 0.92rem; margin-bottom: 20px;">
-                    Planning a trip or taking days off? Choose how many lectures per subject you plan to miss to see your post-vacation standing across all subjects at once.
+                    Planning a trip or taking days off? Choose how many lectures per subject you plan to miss to see
+                    your post-vacation standing across all subjects at once.
                 </p>
                 <div class="vacation-input-row">
                     <div>
-                        <label style="color: #cbd5e1; font-size: 0.88rem; font-weight: 600; margin-right: 8px;">Days / Lectures to Skip per Subject:</label>
-                        <input type="number" id="vacation-days-input" class="form-input" value="3" min="1" max="30" style="width: 90px;">
+                        <label style="color: #cbd5e1; font-size: 0.88rem; font-weight: 600; margin-right: 8px;">Days /
+                            Lectures to Skip per Subject:</label>
+                        <input type="number" id="vacation-days-input" class="form-input" value="3" min="1" max="30"
+                            style="width: 90px;">
                     </div>
-                    <button type="button" class="btn-pdf" id="btn-calc-vacation" style="width: auto; padding: 10px 20px;">Calculate Trip Impact</button>
+                    <button type="button" class="btn-pdf" id="btn-calc-vacation"
+                        style="width: auto; padding: 10px 20px;">Calculate Trip Impact</button>
                 </div>
             </div>
 
@@ -217,7 +233,8 @@
 
         <!-- 3. INTERACTIVE CALENDAR TAB -->
         <div id="tab-calendar" class="tab-panel">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
                 <h2 style="font-size: 1.3rem;">📅 Subject & Day-Wise Attendance History</h2>
                 <div>
                     <label style="color: #9ca3af; margin-right: 10px; font-weight: 600;">Filter Subject:</label>
@@ -247,7 +264,8 @@
                         <div class="cal-day-header">Sat</div>
                     </div>
                     <div class="cal-grid" id="cal-body"></div>
-                    <div style="display: flex; gap: 16px; margin-top: 18px; font-size: 0.8rem; color: #9ca3af; justify-content: center;">
+                    <div
+                        style="display: flex; gap: 16px; margin-top: 18px; font-size: 0.8rem; color: #9ca3af; justify-content: center;">
                         <span>🟢 All Present</span>
                         <span>🔴 Absent</span>
                         <span>🟡 Mixed</span>
@@ -255,8 +273,10 @@
                 </div>
 
                 <div class="cal-card">
-                    <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;" id="selected-date-title">Select a Date</h3>
-                    <p style="color: #9ca3af; font-size: 0.86rem; margin-bottom: 18px;">Click any date on the calendar to inspect individual lectures or raise an absent dispute.</p>
+                    <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;" id="selected-date-title">Select
+                        a Date</h3>
+                    <p style="color: #9ca3af; font-size: 0.86rem; margin-bottom: 18px;">Click any date on the calendar
+                        to inspect individual lectures or raise an absent dispute.</p>
                     <div id="selected-date-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
             </div>
@@ -264,16 +284,20 @@
 
         <!-- 4. EXAM RESULTS & ACADEMIC ANALYTICS TAB -->
         <div id="tab-results" class="tab-panel">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; margin-bottom: 28px;">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; margin-bottom: 28px;">
                 <!-- SGPA Trend Graph Card -->
                 <div class="card">
-                    <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">📈 Semester SGPA Performance Trend</h3>
-                    <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 12px;">Automated grade-point progression across published semesters</p>
+                    <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">📈 Semester SGPA Performance
+                        Trend</h3>
+                    <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 12px;">Automated grade-point
+                        progression across published semesters</p>
                     {% if data.results %}
                     <div class="chart-row">
                         {% for sem in data.results %}
                         <div class="chart-bar-wrap">
-                            <span style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">{{ sem.sgpa if sem.sgpa > 0 else "N/A" }}</span>
+                            <span style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">{{
+                                sem.sgpa if sem.sgpa > 0 else "N/A" }}</span>
                             <div class="chart-bar" data-sgpa="{{ sem.sgpa }}"></div>
                             <span style="font-size: 0.78rem; color: #9ca3af; margin-top: 8px;">{{ sem.semester }}</span>
                         </div>
@@ -286,19 +310,28 @@
 
                 <!-- Target Grade Predictor Card -->
                 <div class="card">
-                    <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">🎯 Final Exam Target Grade Predictor</h3>
-                    <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 16px;">Enter your internal sessional marks to see the exact external score needed:</p>
+                    <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">🎯 Final Exam Target Grade
+                        Predictor</h3>
+                    <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 16px;">Enter your internal sessional
+                        marks to see the exact external score needed:</p>
                     <div style="display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
                         <div style="flex: 1;">
-                            <label style="font-size: 0.8rem; color: #9ca3af; display: block; margin-bottom: 4px;">Your Internal Marks (out of 40)</label>
-                            <input type="number" id="pred-internal" class="form-input" value="32" min="0" max="40" style="width: 100%;">
+                            <label style="font-size: 0.8rem; color: #9ca3af; display: block; margin-bottom: 4px;">Your
+                                Internal Marks (out of 40)</label>
+                            <input type="number" id="pred-internal" class="form-input" value="32" min="0" max="40"
+                                style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
-                            <label style="font-size: 0.8rem; color: #9ca3af; display: block; margin-bottom: 4px;">External Exam Max Marks</label>
-                            <input type="number" id="pred-external-max" class="form-input" value="60" min="40" max="100" style="width: 100%;">
+                            <label
+                                style="font-size: 0.8rem; color: #9ca3af; display: block; margin-bottom: 4px;">External
+                                Exam Max Marks</label>
+                            <input type="number" id="pred-external-max" class="form-input" value="60" min="40" max="100"
+                                style="width: 100%;">
                         </div>
                     </div>
-                    <div id="grade-predictor-output" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.86rem;"></div>
+                    <div id="grade-predictor-output"
+                        style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.86rem;">
+                    </div>
                 </div>
             </div>
 
@@ -310,7 +343,8 @@
                     <label style="color: #9ca3af; margin-right: 10px; font-weight: 600;">Select Semester:</label>
                     <select class="sem-dropdown" id="sem-select">
                         {% for sem in data.results %}
-                        <option value="sem-{{ sem.code }}" {% if loop.last %}selected{% endif %}>{{ sem.semester }}</option>
+                        <option value="sem-{{ sem.code }}" {% if loop.last %}selected{% endif %}>{{ sem.semester }}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -318,44 +352,47 @@
             </div>
 
             {% if data.results %}
-                {% for sem in data.results %}
-                <div id="sem-{{ sem.code }}" class="sem-block {% if loop.last %}active{% endif %}">
-                    <h3 style="color: #38bdf8; margin-bottom: 12px; font-size: 1.12rem;">{{ sem.semester }} Marksheet</h3>
-                    {% if sem.tables %}
-                        {% for table in sem.tables %}
-                        <div class="table-responsive" style="margin-bottom: 24px;">
-                            <table>
-                                {% for row in table %}
-                                <tr>
-                                    {% for cell in row %}
-                                    {% if loop.first and loop.depth == 1 %}
-                                        <th>{{ cell }}</th>
-                                    {% else %}
-                                        <td>{{ cell }}</td>
-                                    {% endif %}
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                            </table>
-                        </div>
+            {% for sem in data.results %}
+            <div id="sem-{{ sem.code }}" class="sem-block {% if loop.last %}active{% endif %}">
+                <h3 style="color: #38bdf8; margin-bottom: 12px; font-size: 1.12rem;">{{ sem.semester }} Marksheet</h3>
+                {% if sem.tables %}
+                {% for table in sem.tables %}
+                <div class="table-responsive" style="margin-bottom: 24px;">
+                    <table>
+                        {% for row in table %}
+                        <tr>
+                            {% for cell in row %}
+                            {% if loop.first and loop.depth == 1 %}
+                            <th>{{ cell }}</th>
+                            {% else %}
+                            <td>{{ cell }}</td>
+                            {% endif %}
+                            {% endfor %}
+                        </tr>
                         {% endfor %}
-                    {% else %}
-                        <div class="card" style="text-align: center; color: #9ca3af;">No published mark records found for {{ sem.semester }}.</div>
-                    {% endif %}
+                    </table>
                 </div>
                 {% endfor %}
+                {% else %}
+                <div class="card" style="text-align: center; color: #9ca3af;">No published mark records found for {{
+                    sem.semester }}.</div>
+                {% endif %}
+            </div>
+            {% endfor %}
             {% else %}
-                <div class="card" style="text-align: center; color: #9ca3af;">No exam results records found on portal.</div>
+            <div class="card" style="text-align: center; color: #9ca3af;">No exam results records found on portal.</div>
             {% endif %}
         </div>
 
         <!-- 5. SMART ALERTS & WRONG-ABSENT DISPUTE TAB -->
         <div id="tab-alerts" class="tab-panel">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 24px;">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 24px;">
 
                 <!-- Browser & Email Absent Alert Card -->
                 <div class="card">
-                    <h3 style="font-size: 1.2rem; color: #38bdf8; margin-bottom: 8px;">🔔 Instant Absent Notification Center</h3>
+                    <h3 style="font-size: 1.2rem; color: #38bdf8; margin-bottom: 8px;">🔔 Instant Absent Notification
+                        Center</h3>
                     <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 18px;">
                         Get notified via Browser Push and Email whenever an <b>ABSENT</b> is marked on your portal.
                     </p>
@@ -363,16 +400,45 @@
                     <div class="push-notice-box">
                         <div>
                             <div style="font-weight: 700; font-size: 0.95rem;">Desktop / Mobile Browser Push</div>
-                            <div style="color: #9ca3af; font-size: 0.8rem;" id="push-status-text">Click enable to allow instant pop-up alerts</div>
+                            <div style="color: #9ca3af; font-size: 0.8rem;" id="push-status-text">Click enable to allow
+                                instant pop-up alerts</div>
                         </div>
-                        <button type="button" class="btn-pdf" id="btn-enable-push" style="width: auto; padding: 8px 14px;">Enable & Test Push</button>
+                        <button type="button" class="btn-pdf" id="btn-enable-push"
+                            style="width: auto; padding: 8px 14px;">Enable & Test Push</button>
                     </div>
 
                     <h4 style="font-size: 1rem; margin-bottom: 10px; color: #e2e8f0;">📧 Email Absent Alert Setup</h4>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <input type="email" id="alert-to-email" class="form-input" placeholder="Recipient Email (your email)" value="{{ data.student_email }}">
-                        <input type="email" id="alert-smtp-user" class="form-input" placeholder="Sender Gmail Address (optional for SMTP)">
-                        <input type="password" id="alert-smtp-pass" class="form-input" placeholder="Gmail App Password (optional for SMTP)">
+                        <hr style="border: none; border-top: 1px solid #1f2937; margin: 20px 0;">
+                        <h4 style="font-size: 1rem; margin-bottom: 6px; color: #38bdf8;">🔐 Cloud Password Vault (24/7
+                            Auto-Sync & 0.4s Instant Login)</h4>
+                        <p style="color: #9ca3af; font-size: 0.84rem; margin-bottom: 12px;">
+                            Opt-in to store your password encrypted with AES-256 in Supabase so GitHub Actions can check
+                            your attendance while you sleep.
+                        </p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button type="button" class="btn-pdf" id="btn-encrypt-vault" style="flex: 1;">
+                                {% if vault_enabled %}🔒 Re-Encrypt & Update Vault{% else %}🔐 Encrypt & Save Password
+                                to Cloud{% endif %}
+                            </button>
+                            <button type="button" class="btn-dispute" id="btn-wipe-vault" style="padding: 10px 14px;">
+                                🗑️ Wipe Vault
+                            </button>
+                        </div>
+                        <p id="vault-status-msg"
+                            style="font-size: 0.85rem; margin-top: 8px; font-weight: 600; color: {% if vault_enabled %}#4ade80{% else %}#fbbf24{% endif %};">
+                            {% if vault_enabled %}
+                            ✔ Password is encrypted in Supabase Vault (0.4s Instant Login & Background Sync Active)
+                            {% else %}
+                            🛡️ Vault is currently EMPTY (Session-Only Privacy Mode)
+                            {% endif %}
+                        </p>
+                        <input type="email" id="alert-to-email" class="form-input"
+                            placeholder="Recipient Email (your email)" value="{{ data.student_email }}">
+                        <input type="email" id="alert-smtp-user" class="form-input"
+                            placeholder="Sender Gmail Address (optional for SMTP)">
+                        <input type="password" id="alert-smtp-pass" class="form-input"
+                            placeholder="Gmail App Password (optional for SMTP)">
                         <button type="button" class="btn-pdf" id="btn-send-email-alert">Send Test Absent Alert</button>
                         <p id="email-alert-status" style="font-size: 0.85rem; color: #38bdf8; margin-top: 4px;"></p>
                     </div>
@@ -380,9 +446,11 @@
 
                 <!-- Wrong-Absent Dispute Generator Card -->
                 <div class="card">
-                    <h3 style="font-size: 1.2rem; color: #38bdf8; margin-bottom: 8px;">⚖️ Wrong-Absent Dispute Generator</h3>
+                    <h3 style="font-size: 1.2rem; color: #38bdf8; margin-bottom: 8px;">⚖️ Wrong-Absent Dispute Generator
+                    </h3>
                     <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 16px;">
-                        Marked absent by mistake? Generate an official correction request addressed to <b>{{ data.incharge }}</b> with your exact Roll Number and lecture date.
+                        Marked absent by mistake? Generate an official correction request addressed to <b>{{
+                            data.incharge }}</b> with your exact Roll Number and lecture date.
                     </p>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <select id="dispute-subject" class="sem-dropdown">
@@ -390,12 +458,18 @@
                             <option value="{{ s.name }}">{{ s.name }}</option>
                             {% endfor %}
                         </select>
-                        <input type="text" id="dispute-date" class="form-input" value="{{ data.today_date }}" placeholder="Date of Lecture (e.g. 15-10-2026)">
-                        <input type="text" id="dispute-reason" class="form-input" value="I was present in the lecture/lab, but my attendance was inadvertently marked absent." placeholder="Reason / Note">
-                        <button type="button" class="btn-pdf" id="btn-generate-dispute">Generate Official Dispute Letter</button>
+                        <input type="text" id="dispute-date" class="form-input" value="{{ data.today_date }}"
+                            placeholder="Date of Lecture (e.g. 15-10-2026)">
+                        <input type="text" id="dispute-reason" class="form-input"
+                            value="I was present in the lecture/lab, but my attendance was inadvertently marked absent."
+                            placeholder="Reason / Note">
+                        <button type="button" class="btn-pdf" id="btn-generate-dispute">Generate Official Dispute
+                            Letter</button>
                     </div>
-                    <textarea id="dispute-output" class="modal-textarea" readonly placeholder="Your formatted application will appear here..."></textarea>
-                    <button type="button" class="btn-dispute" id="btn-copy-dispute" style="width: 100%; padding: 10px;">📋 Copy Application Text</button>
+                    <textarea id="dispute-output" class="modal-textarea" readonly
+                        placeholder="Your formatted application will appear here..."></textarea>
+                    <button type="button" class="btn-dispute" id="btn-copy-dispute"
+                        style="width: 100%; padding: 10px;">📋 Copy Application Text</button>
                 </div>
 
             </div>
@@ -405,24 +479,24 @@
         <div id="tab-fees" class="tab-panel">
             <h2 style="margin-bottom: 20px; font-size: 1.3rem;">Fee & Payment Ledger</h2>
             {% if data.fees %}
-                {% for table in data.fees %}
-                <div class="table-responsive" style="margin-bottom: 24px;">
-                    <table>
-                        {% for row in table %}
-                        <tr>
-                            {% for cell in row %}
-                            <td>{{ cell }}</td>
-                            {% endfor %}
-                        </tr>
+            {% for table in data.fees %}
+            <div class="table-responsive" style="margin-bottom: 24px;">
+                <table>
+                    {% for row in table %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
                         {% endfor %}
-                    </table>
-                </div>
-                {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            {% endfor %}
             {% else %}
-                <div class="card" style="text-align: center; color: #9ca3af; padding: 40px;">
-                    <p style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 8px;">💳 Fee Ledger Synchronized</p>
-                    <p>No pending fee balance tables found on your portal account.</p>
-                </div>
+            <div class="card" style="text-align: center; color: #9ca3af; padding: 40px;">
+                <p style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 8px;">💳 Fee Ledger Synchronized</p>
+                <p>No pending fee balance tables found on your portal account.</p>
+            </div>
             {% endif %}
         </div>
 
@@ -434,9 +508,10 @@
                 <div class="profile-left">
                     <div class="profile-avatar">
                         {% if data.profile and data.profile.photo_url %}
-                            <img src="{{ data.profile.photo_url }}" alt="Student" style="width: 100%; height: 100%; object-fit: cover;">
+                        <img src="{{ data.profile.photo_url }}" alt="Student"
+                            style="width: 100%; height: 100%; object-fit: cover;">
                         {% else %}
-                            👤
+                        👤
                         {% endif %}
                     </div>
                     <div class="profile-meta">
@@ -453,28 +528,30 @@
             <h3 style="font-size: 1.12rem; color: #38bdf8; margin-bottom: 14px;">Official Registered Information</h3>
             <div class="profile-grid">
                 {% if data.profile and data.profile.details %}
-                    {% for key, val in data.profile.details %}
-                    <div class="profile-item">
-                        <div class="profile-label">{{ key }}</div>
-                        <div class="profile-val">{{ val }}</div>
-                    </div>
-                    {% endfor %}
+                {% for key, val in data.profile.details %}
+                <div class="profile-item">
+                    <div class="profile-label">{{ key }}</div>
+                    <div class="profile-val">{{ val }}</div>
+                </div>
+                {% endfor %}
                 {% else %}
-                    <div class="profile-item">
-                        <div class="profile-label">STUDENT ID</div>
-                        <div class="profile-val">{{ data.student_id }}</div>
-                    </div>
-                    <div class="profile-item">
-                        <div class="profile-label">FACULTY INCHARGE</div>
-                        <div class="profile-val">{{ data.incharge }}</div>
-                    </div>
+                <div class="profile-item">
+                    <div class="profile-label">STUDENT ID</div>
+                    <div class="profile-val">{{ data.student_id }}</div>
+                </div>
+                <div class="profile-item">
+                    <div class="profile-label">FACULTY INCHARGE</div>
+                    <div class="profile-val">{{ data.incharge }}</div>
+                </div>
                 {% endif %}
             </div>
 
             <!-- In-App Portal Password Changer -->
             <div class="card" style="max-width: 520px;">
-                <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">🔐 In-App Portal Password Changer</h3>
-                <p style="color: #9ca3af; font-size: 0.88rem; margin-bottom: 16px;">Update your official <code>agclms.in</code> password directly from Ultra Portal:</p>
+                <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">🔐 In-App Portal Password Changer
+                </h3>
+                <p style="color: #9ca3af; font-size: 0.88rem; margin-bottom: 16px;">Update your official
+                    <code>agclms.in</code> password directly from Ultra Portal:</p>
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <input type="password" id="cp-old" class="form-input" placeholder="Current Portal Password">
                     <input type="password" id="cp-new" class="form-input" placeholder="New Password">
@@ -494,9 +571,12 @@
             "incharge": data.incharge,
             "subjects": data.subjects,
             "calendar_records": data.calendar_records,
-            "new_absents": new_absents
+            "new_absents": new_absents,
+            "needs_background_sync": needs_background_sync | default(false),
+            "partial_load": data.partial_load | default(false)
         } | tojson }}
     </script>
     <script src="/static/app.js"></script>
 </body>
+
 </html>

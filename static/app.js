@@ -567,3 +567,72 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 });
+// 10. 1-Click Cloud Password Vault Toggle (Encrypt / Wipe in Supabase)
+    const encryptVaultBtn = document.getElementById("btn-encrypt-vault");
+    const wipeVaultBtn = document.getElementById("btn-wipe-vault");
+    const vaultStatusMsg = document.getElementById("vault-status-msg");
+
+    function updateVaultState(enableVault) {
+        if (!vaultStatusMsg) return;
+        vaultStatusMsg.textContent = enableVault
+            ? "Encrypting password with AES-256 & saving to Supabase..."
+            : "Wiping encrypted password from Supabase...";
+        vaultStatusMsg.style.color = "#38bdf8";
+
+        fetch("/api/toggle-vault", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enable: enableVault })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            vaultStatusMsg.textContent = res.message;
+            vaultStatusMsg.style.color = res.vault_enabled ? "#4ade80" : "#fbbf24";
+            if (encryptVaultBtn) {
+                encryptVaultBtn.textContent = res.vault_enabled
+                    ? "🔒 Re-Encrypt & Update Vault"
+                    : "🔐 Encrypt & Save Password to Cloud";
+            }
+        });
+    }
+
+    if (encryptVaultBtn) {
+        encryptVaultBtn.addEventListener("click", function () {
+            updateVaultState(true);
+        });
+    }
+
+    if (wipeVaultBtn) {
+        wipeVaultBtn.addEventListener("click", function () {
+            updateVaultState(false);
+        });
+    }
+
+    // 11. Non-Blocking Background Sync (Keeps initial page load under 1 second)
+    if (portalData.needs_background_sync) {
+        const syncPill = document.querySelector(".sync-pill");
+        if (syncPill) {
+            syncPill.textContent = "🔄 Syncing Live Portal in Background...";
+        }
+
+        setTimeout(function () {
+            fetch("/api/background-sync", { method: "POST" })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (!res.ok) return;
+                    if (syncPill) {
+                        syncPill.className = "sync-pill sync-live";
+                        syncPill.textContent = "● LIVE PORTAL SYNC (" + res.last_synced + ")";
+                    }
+                    const overallEl = document.getElementById("overall-pct-display");
+                    if (overallEl && res.overall_pct !== undefined) {
+                        overallEl.textContent = res.overall_pct + "%";
+                    }
+                    // If this was a cold-start partial load, reload once silently when full data is cached
+                    if (portalData.partial_load) {
+                        window.location.reload();
+                    }
+                })
+                .catch(function () {});
+        }, 400);
+    }
