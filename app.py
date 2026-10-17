@@ -1,14 +1,32 @@
 import os
+import hmac
+import html
+from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
 from portal_client import PortalClient
-from notifier import save_snapshot, load_snapshot, detect_new_absents, send_absent_email, send_web_push, VAPID_PUBLIC_KEY
+from notifier import (
+    save_snapshot,
+    load_snapshot,
+    detect_new_absents,
+    send_absent_email,
+    send_web_push,
+    VAPID_PUBLIC_KEY
+)
 from db_client import (
     sync_user_to_supabase,
     log_login_activity,
     get_user_record,
     save_push_or_email_prefs,
     set_vault_password,
-    decrypt_password
+    decrypt_password,
+    submit_feedback,
+    get_user_feedback,
+    get_admin_dashboard_data,
+    admin_update_feedback,
+    admin_manage_user,
+    create_admin_broadcast,
+    get_user_announcements,
+    admin_delete_feedback
 )
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,8 +44,47 @@ possible_static_dirs = [
 ]
 static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path.join(base_dir, "static"))
 
+import time
+from datetime import timedelta
+
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 app.secret_key = os.environ.get("SECRET_KEY", "ultra_attendance_secret_key_pro")
+
+# 1. Harden Session Cookies against XSS & CSRF
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=bool(os.environ.get("VERCEL")),
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=12)
+)
+
+# 2. Brute-Force Rate Limiter (Tracks failed logins per IP)
+_FAILED_LOGINS = {}  # { ip: [timestamp1, timestamp2, ...] }
+
+
+def is_ip_rate_limited(ip: str, max_attempts: int = 5, window_sec: int = 600) -> bool:
+    now = time.time()
+    attempts = [t for t in _FAILED_LOGINS.get(ip, []) if now - t < window_sec]
+    _FAILED_LOGINS[ip] = attempts
+    return len(attempts) >= max_attempts
+
+
+def record_failed_login(ip: str):
+    now = time.time()
+    _FAILED_LOGINS.setdefault(ip, []).append(now)
+
+
+def clear_failed_logins(ip: str):
+    _FAILED_LOGINS.pop(ip, None)
+
+
+# 3. Inject Production Security Headers on Every Response
+@app.after_request
+def apply_security_headers(response):
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -117,6 +174,9 @@ def dashboard():
         if s.get("danger_level") in ("critical", "warning")
     ]
 
+    user_feedback = get_user_feedback(student_id)
+    admin_announcements = get_user_announcements(student_id)
+
     return render_template(
         "dashboard.html",
         data=data,
@@ -126,16 +186,14 @@ def dashboard():
         danger_subjects=danger_subjects,
         overall_present=total_present,
         overall_classes=total_classes,
-        overall_pct=round(overall_pct, 2)
+        overall_pct=round(overall_pct, 2),
+        user_feedback=user_feedback,
+        admin_announcements=admin_announcements
     )
 
 
 @app.route("/api/background-sync", methods=["POST"])
 def api_background_sync():
-    """
-    Runs silently in the background after the Attendance tab is already visible on screen.
-    Scrapes fresh Attendance + Results + Fees + Profile and syncs to Supabase.
-    """
     student_id = session.get("student_id")
     password = session.get("password")
     if not student_id or not password:
@@ -171,7 +229,6 @@ def api_background_sync():
 
 @app.route("/api/toggle-vault", methods=["POST"])
 def api_toggle_vault():
-    """Handles the 1-Click Encrypt Password to Supabase Vault button."""
     student_id = session.get("student_id")
     password = session.get("password")
     if not student_id or not password:
@@ -280,6 +337,191 @@ def api_test_push():
         "⚡ Ultra Portal Lock-Screen Push Active!",
         "Your device is now linked to Supabase. Any new ABSENT mark will alert you automatically!"
     )
+    return jsonify({"ok": ok, "message": msg})
+
+
+# ==================== USER FEEDBACK ENDPOINT ====================
+
+@app.route("/api/submit-feedback", methods=["POST"])
+def api_submit_feedback():
+    student_id = session.get("student_id")
+    if not student_id:
+        return jsonify({"ok": False, "message": "Not logged in."}), 401
+
+    req = request.get_json() or {}
+    category = html.escape((req.get("category") or "Suggestion").strip())
+    rating = req.get("rating", 5)
+    message = html.escape((req.get("message") or "").strip())
+
+    if len(message) < 5:
+        return jsonify({"ok": False, "message": "Please enter at least 5 characters."})
+
+    db_user = get_user_record(student_id)
+    student_name = (db_user.get("student_name") if db_user else None) or "User"
+
+    ok, msg = submit_feedback(student_id, student_name, category, rating, message)
+    return jsonify({"ok": ok, "message": msg})
+
+
+# ==================== DEDICATED ADMIN PORTAL ====================
+
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "master_harman").strip()
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "").strip()
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("is_ultra_admin"):
+            return redirect(url_for("admin_login"))
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if session.get("is_ultra_admin"):
+        return redirect(url_for("admin_dashboard"))
+
+    error = None
+    client_ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "unknown").split(",")[0].strip()
+
+    if request.method == "POST":
+        if is_ip_rate_limited(client_ip, max_attempts=5, window_sec=600):
+            return render_template(
+                "admin_login.html",
+                error="Too many failed attempts. Your IP is locked out for 10 minutes."
+            ), 429
+
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+
+        if not ADMIN_PASSWORD:
+            error = "ADMIN_PASSWORD is not set in environment variables."
+        elif hmac.compare_digest(username, ADMIN_USERNAME) and hmac.compare_digest(password, ADMIN_PASSWORD):
+            clear_failed_logins(client_ip)
+            session.permanent = True
+            session["is_ultra_admin"] = True
+            return redirect(url_for("admin_dashboard"))
+        else:
+            record_failed_login(client_ip)
+            error = "Invalid Administrator Credentials."
+
+    return render_template("admin_login.html", error=error)
+
+
+@app.route("/admin")
+@admin_required
+def admin_dashboard():
+    admin_data = get_admin_dashboard_data()
+    users = admin_data["users"]
+    feedback = admin_data["feedback"]
+    logs = admin_data["logs"]
+
+    stats = {
+        "total_users": len(users),
+        "vault_users": sum(1 for u in users if u.get("encrypted_password")),
+        "push_users": sum(1 for u in users if u.get("push_subscription")),
+        "pending_feedback": sum(1 for f in feedback if f.get("status") == "Pending" and f.get("category") != "ADMIN_BROADCAST"),
+        "total_logins": sum((u.get("login_count") or 1) for u in users)
+    }
+    return render_template("admin.html", users=users, feedback=feedback, logs=logs, stats=stats)
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("is_ultra_admin", None)
+    return redirect(url_for("admin_login"))
+
+
+@app.route("/api/admin/reply-feedback", methods=["POST"])
+@admin_required
+def api_admin_reply_feedback():
+    req = request.get_json() or {}
+    fb_id = req.get("id")
+    status = req.get("status", "Reviewed")
+    reply = (req.get("admin_reply") or "").strip()
+
+    ok, updated_row = admin_update_feedback(fb_id, status, reply)
+    if ok and updated_row and reply:
+        target_id = updated_row.get("student_id")
+        u_rec = get_user_record(target_id)
+        if u_rec and u_rec.get("push_subscription"):
+            send_web_push(
+                u_rec["push_subscription"],
+                title=f"💬 Developer Replied to Your {updated_row.get('category', 'Feedback')}",
+                body=reply[:120],
+                url="/dashboard"
+            )
+    return jsonify({"ok": ok, "message": "Reply saved & user notified!" if ok else "Failed to update feedback."})
+
+
+@app.route("/api/admin/delete-feedback", methods=["POST"])
+@admin_required
+def api_admin_delete_feedback():
+    req = request.get_json() or {}
+    fb_id = req.get("id")
+    ok = admin_delete_feedback(fb_id)
+    return jsonify({"ok": ok, "message": "Deleted!" if ok else "Could not delete."})
+
+
+@app.route("/api/admin/broadcast-push", methods=["POST"])
+@admin_required
+def api_admin_broadcast_push():
+    req = request.get_json() or {}
+    target = (req.get("target") or "all").strip()
+    title = (req.get("title") or "⚡ Ultra Portal Announcement").strip()
+    body = (req.get("body") or "").strip()
+
+    if not body:
+        return jsonify({"ok": False, "message": "Notification body cannot be empty."})
+
+    # 1. Save in-app announcement so users see it inside their dashboard
+    create_admin_broadcast(target, title, body)
+
+    # 2. Also fire OS/Browser Web Push to all subscribed devices
+    admin_data = get_admin_dashboard_data()
+    sent_count = 0
+    for u in admin_data["users"]:
+        if target != "all" and u.get("student_id") != target:
+            continue
+        sub = u.get("push_subscription")
+        if sub:
+            ok, _ = send_web_push(sub, title=title, body=body, url="/dashboard")
+            if ok:
+                sent_count += 1
+
+    return jsonify({
+        "ok": True,
+        "message": f"Saved to Dashboards & pushed to {sent_count} lock-screen device(s)!"
+    })
+
+
+@app.route("/api/admin/user-action", methods=["POST"])
+@admin_required
+def api_admin_user_action():
+    req = request.get_json() or {}
+    student_id = (req.get("student_id") or "").strip()
+    action = (req.get("action") or "").strip()
+
+    if action == "force_sync":
+        u = get_user_record(student_id)
+        if not u or not u.get("encrypted_password"):
+            return jsonify({"ok": False, "message": "User does not have an encrypted password in Vault."})
+        plain_pw = decrypt_password(u["encrypted_password"])
+        if not plain_pw:
+            return jsonify({
+                "ok": False,
+                "message": "Could not decrypt Vault password (key changed). Click 'Wipe Vault' and re-save it."
+            })
+        client = PortalClient(student_id, plain_pw)
+        data, err = client.get_full_profile(fast_mode=False)
+        if not data:
+            return jsonify({"ok": False, "message": f"Sync failed: {err}"})
+        sync_user_to_supabase(student_id, plain_pw, data, is_login_event=False)
+        return jsonify({"ok": True, "message": f"✔ Live portal sync completed for {student_id}!"})
+
+    ok, msg = admin_manage_user(student_id, action)
     return jsonify({"ok": ok, "message": msg})
 
 

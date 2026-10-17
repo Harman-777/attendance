@@ -636,3 +636,39 @@ document.addEventListener("DOMContentLoaded", function () {
                 .catch(function () {});
         }, 400);
     }
+    // // 12. Submit Feedback & Suggestions to Supabase
+    // const fbBtn = document.getElementById("btn-submit-feedback");
+    // const fbStatus = document.getElementById("fb-status-msg");
+    // if (fbBtn) {
+    //     fbBtn.addEventListener("click", function () {
+    //         const category = document.getElementById("fb-category").value;
+    //         const rating = document.getElementById("fb-rating").value;
+    //         const message = document.getElementById("fb-message").value.trim();
+
+    //         if (!message) {
+    //             fbStatus.textContent = "Please write a message before submitting.";
+    //             fbStatus.style.color = "#f87171";
+    //             return;
+    //         }
+
+    //         fbBtn.disabled = true;
+    //         fbStatus.textContent = "Sending feedback to developer...";
+    //         fbStatus.style.color = "#38bdf8";
+
+    //         fetch("/api/submit-feedback", {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify({ category: category, rating: rating, message: message })
+    //         })
+    //         .then(function (r) { return r.json(); })
+    //         .then(function (res) {
+    //             fbBtn.disabled = false;
+    //             fbStatus.textContent = res.message;
+    //             fbStatus.style.color = res.ok ? "#4ade80" : "#f87171";
+    //             if (res.ok) {
+    //                 document.getElementById("fb-message").value = "";
+    //                 setTimeout(function () { window.location.reload(); }, 1000);
+    //             }
+    //         });
+    //     });
+    // }

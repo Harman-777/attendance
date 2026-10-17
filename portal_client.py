@@ -27,23 +27,44 @@ class PortalClient:
         return self.session.cookies.get_dict()
 
     def authenticate(self):
+        if not self.student_id or not self.password:
+            return False, "Missing Student ID or Password."
         try:
             res = self.session.get(LOGIN_URL, timeout=10)
             soup = BeautifulSoup(res.text, "html.parser")
-            token = soup.find("input", {"name": "__RequestVerificationToken"})
-            if not token:
-                return False, "Security token not found on login page."
+            form = soup.find("form")
 
-            payload = {
-                "StudentId": self.student_id,
-                "Password": self.password,
-                "__RequestVerificationToken": token.get("value", "")
-            }
-            self.session.post(LOGIN_URL, data=payload, timeout=10)
+            payload = {}
+            id_field_found = False
+            pw_field_found = False
+
+            # Dynamically grab all hidden tokens and exact field names from the login form
+            for inp in (form.find_all("input") if form else soup.find_all("input")):
+                name = inp.get("name")
+                if not name:
+                    continue
+                itype = (inp.get("type") or "text").lower()
+                if itype == "hidden":
+                    payload[name] = inp.get("value", "")
+                elif itype == "password" or "pass" in name.lower():
+                    payload[name] = self.password
+                    pw_field_found = True
+                elif itype in ("text", "number", "tel") and not id_field_found:
+                    payload[name] = self.student_id
+                    id_field_found = True
+
+            if not id_field_found:
+                payload["StudentId"] = self.student_id
+                payload["SId"] = self.student_id
+            if not pw_field_found:
+                payload["Password"] = self.password
+
+            post_url = urljoin(LOGIN_URL, form["action"]) if (form and form.get("action")) else LOGIN_URL
+            self.session.post(post_url, data=payload, timeout=10)
 
             dash_res = self.session.get(DASHBOARD_URL, timeout=10)
             if "StudentLogin" in dash_res.url or "AttendanceReport" not in dash_res.text:
-                return False, "Invalid Student ID or Password."
+                return False, "Invalid Student ID or Password on college portal."
 
             self.logged_in = True
             self._cached_dash_html = dash_res.text
