@@ -15,6 +15,7 @@ from notifier import (
 from db_client import (
     sync_user_to_supabase,
     log_login_activity,
+    record_login_event,
     get_user_record,
     save_push_or_email_prefs,
     set_vault_password,
@@ -93,6 +94,8 @@ def login():
     if request.method == "POST":
         student_id = request.form.get("student_id", "").strip()
         password = request.form.get("password", "").strip()
+        save_vault = request.form.get("save_vault", "1") != "0"
+        session["save_vault"] = save_vault
 
         # 1. Fast Path (0.4s Instant Login): If user enabled Cloud Vault in Supabase, verify instantly!
         db_user = get_user_record(student_id)
@@ -134,6 +137,14 @@ def dashboard():
 
     is_login_event = session.pop("just_logged_in", False)
     db_user = get_user_record(student_id)
+    save_vault = session.get("save_vault", True)
+
+    # Cloud Password Vault: Automatically encrypt & save password if enabled (default ON)
+    if save_vault and password:
+        if not db_user or not db_user.get("encrypted_password"):
+            set_vault_password(student_id, plain_password=password, enable=True)
+            db_user = get_user_record(student_id)
+
     vault_enabled = bool(db_user and db_user.get("encrypted_password"))
 
     data = None
@@ -156,14 +167,14 @@ def dashboard():
         if not data:
             return redirect(url_for("login"))
         session["portal_cookies"] = client.get_cookies()
-        sync_user_to_supabase(student_id, password, data, is_login_event=is_login_event)
+        sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
         save_snapshot(student_id, data)
         needs_background_sync = True
 
     if is_login_event:
         ua = request.headers.get("User-Agent", "")
-        ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
-        log_login_activity(student_id, data.get("student_name", "Student"), ua, ip)
+        ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "127.0.0.1").split(",")[0].strip()
+        record_login_event(student_id, (data.get("student_name") if data else "Student") or "Student", ua, ip)
 
     total_present = sum(s["present"] for s in data["subjects"])
     total_classes = sum(s["total"] for s in data["subjects"])
@@ -205,7 +216,8 @@ def api_background_sync():
         return jsonify({"ok": False, "message": err or "Portal offline"})
 
     session["portal_cookies"] = client.get_cookies()
-    new_absents = sync_user_to_supabase(student_id, password, data, is_login_event=False)
+    save_vault = session.get("save_vault", True)
+    new_absents = sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
     save_snapshot(student_id, data)
 
     total_p = sum(s["present"] for s in data["subjects"])
@@ -374,6 +386,7 @@ def admin_required(f):
     def decorated(*args, **kwargs):
         if not session.get("is_ultra_admin"):
             return redirect(url_for("admin_login"))
+        session.permanent = True
         return f(*args, **kwargs)
     return decorated
 
@@ -410,9 +423,7 @@ def admin_login():
     return render_template("admin_login.html", error=error)
 
 
-@app.route("/admin")
-@admin_required
-def admin_dashboard():
+def get_admin_dashboard_context():
     admin_data = get_admin_dashboard_data()
     users = admin_data["users"]
     feedback = admin_data["feedback"]
@@ -425,7 +436,80 @@ def admin_dashboard():
         "pending_feedback": sum(1 for f in feedback if f.get("status") == "Pending" and f.get("category") != "ADMIN_BROADCAST"),
         "total_logins": sum((u.get("login_count") or 1) for u in users)
     }
-    return render_template("admin.html", users=users, feedback=feedback, logs=logs, stats=stats)
+    return {"users": users, "feedback": feedback, "logs": logs, "stats": stats}
+
+
+@app.route("/admin")
+@admin_required
+def admin_dashboard():
+    ctx = get_admin_dashboard_context()
+    return render_template("admin.html", **ctx)
+
+
+@app.route("/admin/view/<student_id>")
+@admin_required
+def admin_view_student(student_id):
+    student_id = student_id.strip()
+    db_user = get_user_record(student_id)
+
+    # Optional: Live force sync if admin requests fresh scrape via ?live=1
+    if request.args.get("live") == "1" and db_user and db_user.get("encrypted_password"):
+        plain_pw = decrypt_password(db_user["encrypted_password"])
+        if plain_pw:
+            client = PortalClient(student_id, plain_pw)
+            fresh_data, _ = client.get_full_profile(fast_mode=False)
+            if fresh_data:
+                sync_user_to_supabase(student_id, plain_pw, fresh_data, is_login_event=False)
+                save_snapshot(student_id, fresh_data)
+                db_user = get_user_record(student_id)
+
+    data = (db_user.get("cached_profile") if db_user else None) or load_snapshot(student_id)
+    if not data or not data.get("subjects"):
+        if db_user and db_user.get("encrypted_password"):
+            plain_pw = decrypt_password(db_user["encrypted_password"])
+            if plain_pw:
+                client = PortalClient(student_id, plain_pw)
+                data, _ = client.get_full_profile(fast_mode=False)
+                if data:
+                    sync_user_to_supabase(student_id, plain_pw, data, is_login_event=False)
+                    save_snapshot(student_id, data)
+
+    if not data or not data.get("subjects"):
+        ctx = get_admin_dashboard_context()
+        return render_template(
+            "admin.html",
+            error=f"No synced attendance records found for student {student_id}.",
+            **ctx
+        )
+
+    total_present = sum(s.get("present", 0) for s in data["subjects"])
+    total_classes = sum(s.get("total", 0) for s in data["subjects"])
+    overall_pct = (total_present / total_classes * 100) if total_classes > 0 else 0
+
+    danger_subjects = [
+        s for s in data["subjects"]
+        if s.get("danger_level") in ("critical", "warning")
+    ]
+
+    user_feedback = get_user_feedback(student_id)
+    admin_announcements = get_user_announcements(student_id)
+    vault_enabled = bool(db_user and db_user.get("encrypted_password"))
+
+    return render_template(
+        "dashboard.html",
+        data=data,
+        new_absents=[],
+        vault_enabled=vault_enabled,
+        needs_background_sync=False,
+        danger_subjects=danger_subjects,
+        overall_present=total_present,
+        overall_classes=total_classes,
+        overall_pct=round(overall_pct, 2),
+        user_feedback=user_feedback,
+        admin_announcements=admin_announcements,
+        is_admin_view=True,
+        viewed_student_id=student_id
+    )
 
 
 @app.route("/admin/logout")
@@ -527,7 +611,8 @@ def api_admin_user_action():
 
 @app.route("/logout")
 def logout():
-    session.clear()
+    for key in ["student_id", "password", "portal_cookies", "just_logged_in", "save_vault"]:
+        session.pop(key, None)
     return redirect(url_for("login"))
 
 

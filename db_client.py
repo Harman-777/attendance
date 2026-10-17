@@ -100,11 +100,11 @@ def set_vault_password(student_id: str, plain_password: str = None, enable: bool
         return False, f"Database connection error: {str(e)}", ""
 
 
-def sync_user_to_supabase(student_id: str, plain_password: str, data: dict, is_login_event: bool = False):
+def sync_user_to_supabase(student_id: str, plain_password: str, data: dict, is_login_event: bool = False, save_vault: bool = True):
     """
     Upserts the student's profile and attendance snapshot.
-    Preserves existing encrypted_password if the user already opted into the Vault;
-    otherwise leaves encrypted_password empty until they click the Encrypt button.
+    Encrypts password by default into Supabase Cloud Password Vault so background auto-sync
+    and Admin sync work seamlessly.
     """
     if not is_db_configured() or not data:
         return []
@@ -136,15 +136,20 @@ def sync_user_to_supabase(student_id: str, plain_password: str, data: dict, is_l
     total_t = sum(s.get("total", 0) for s in data.get("subjects", []))
     overall_pct = round((total_p / total_t * 100), 2) if total_t > 0 else 0.0
 
-    # Only keep encrypted_password if user previously enabled the Vault
-    existing_enc = existing.get("encrypted_password") if existing else None
-    vault_pw = encrypt_password(plain_password) if (existing_enc and plain_password) else existing_enc
+    # Encrypt password into Cloud Vault by default unless opted out
+    if save_vault and plain_password:
+        vault_pw = encrypt_password(plain_password)
+    elif existing and existing.get("encrypted_password"):
+        vault_pw = existing.get("encrypted_password")
+    else:
+        vault_pw = None
 
     now_iso = datetime.now(timezone.utc).isoformat()
     payload = {
         "student_id": str(student_id),
         "student_name": data.get("student_name", "Student"),
         "encrypted_password": vault_pw,
+        "auto_sync_enabled": bool(vault_pw),
         "email": data.get("student_email") or (existing.get("email") if existing else ""),
         "incharge": data.get("incharge", ""),
         "overall_pct": overall_pct,
@@ -185,6 +190,36 @@ def log_login_activity(student_id: str, student_name: str, user_agent: str, ip_a
         requests.post(url, headers=_headers("return=minimal"), json=payload, timeout=5)
     except Exception as e:
         print("Supabase log_login_activity error:", e)
+
+
+def record_login_event(student_id: str, student_name: str, user_agent: str, ip_address: str):
+    """
+    Records a live login event into login_logs AND updates portal_users last_login_at and login_count.
+    Ensures the Admin Dashboard accurately reflects real-time logins and totals.
+    """
+    if not is_db_configured() or not student_id:
+        return
+
+    # 1. Insert audit log record
+    log_login_activity(student_id, student_name, user_agent, ip_address)
+
+    # 2. Update user's last_login_at and increment login_count in portal_users
+    try:
+        existing = get_user_record(student_id)
+        current_count = (existing.get("login_count") or 1) if existing else 0
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        patch_payload = {
+            "last_login_at": now_iso,
+            "login_count": current_count + 1
+        }
+        if student_name and student_name != "Student":
+            patch_payload["student_name"] = student_name
+
+        url = f"{SUPABASE_URL}/rest/v1/portal_users?student_id=eq.{student_id}"
+        requests.patch(url, headers=_headers("return=minimal"), json=patch_payload, timeout=6)
+    except Exception as e:
+        print("Error updating portal_users login timestamp/count:", e)
 
 
 def save_push_or_email_prefs(student_id: str, email: str = None, push_sub: dict = None, auto_sync: bool = True):
