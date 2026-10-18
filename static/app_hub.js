@@ -68,8 +68,7 @@ function triggerApkUpdate() {
     }
 
     // 2. If running in older APK shell (v2.0) that lacks native download bridge
-    // NEVER attempt intent:// scheme because WebView will error with net::ERR_UNKNOWN_URL_SCHEME.
-    // Instead, navigate safely to the dedicated /update Center page inside the WebView.
+    // Safely navigate to the dedicated /update Center page inside the WebView.
     const isApk = (window.AndroidApp !== undefined) || (navigator.userAgent && navigator.userAgent.includes("UltraPortalApp"));
     if (isApk) {
         window.location.href = "/update";
