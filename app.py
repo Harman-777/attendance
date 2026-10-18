@@ -558,15 +558,16 @@ def admin_view_student(student_id):
                 db_user = get_user_record(student_id)
 
     data = (db_user.get("cached_profile") if db_user else None) or load_snapshot(student_id)
-    if not data or not data.get("subjects"):
-        if db_user and db_user.get("encrypted_password"):
-            plain_pw = decrypt_password(db_user["encrypted_password"])
-            if plain_pw:
-                client = PortalClient(student_id, plain_pw)
-                data, _ = client.get_full_profile(fast_mode=False)
-                if data:
-                    sync_user_to_supabase(student_id, plain_pw, data, is_login_event=False)
-                    save_snapshot(student_id, data)
+    cached_prof_details = data.get("profile", {}).get("details", []) if data else []
+    if (not data or not data.get("subjects") or len(cached_prof_details) < 4) and db_user and db_user.get("encrypted_password"):
+        plain_pw = decrypt_password(db_user["encrypted_password"])
+        if plain_pw:
+            client = PortalClient(student_id, plain_pw)
+            fresh_data, _ = client.get_full_profile(fast_mode=False)
+            if fresh_data:
+                data = fresh_data
+                sync_user_to_supabase(student_id, plain_pw, data, is_login_event=False)
+                save_snapshot(student_id, data)
 
     if not data or not data.get("subjects"):
         ctx = get_admin_dashboard_context()
@@ -744,6 +745,23 @@ def download_apk():
             mimetype="application/vnd.android.package-archive"
         )
     return redirect("https://github.com/Harman-777/attendance/releases/latest/download/UltraPortal.apk")
+
+
+@app.route("/api/app-version")
+def api_app_version():
+    return jsonify({
+        "latest_version": "2.1",
+        "version_code": 3,
+        "release_date": "18 Oct 2026",
+        "download_url": "/download/UltraPortal.apk",
+        "changelog": [
+            "Welcome section streamlined to Attendance & Simulator tab only",
+            "Full 15-field official student profile sync for all students",
+            "Direct WhatsApp mobile app integration (bypasses browser)",
+            "Native Android Share Sheet drawer with direct APK download link",
+            "Built-in APK update notification and 1-click update downloader"
+        ]
+    })
 
 
 if __name__ == "__main__":

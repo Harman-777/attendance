@@ -99,37 +99,37 @@
         </div>
         {% endif %}
 
-        <header class="main-header">
-            <div class="header-student-info">
-                <h1>Welcome back, {{ data.student_name }}!</h1>
-                <p class="header-student-meta">Student ID: <b class="text-cyan">{{ data.student_id }}</b> <span
-                        class="meta-dot">•</span> Faculty Incharge: <b>{{ data.incharge }}</b></p>
-                {% if data.is_offline %}
-                <span class="sync-pill sync-offline">⚡ OFFLINE SNAPSHOT MODE (Last Synced: {{ data.last_synced
-                    }})</span>
-                {% else %}
-                <span class="sync-pill sync-live">● LIVE PORTAL SYNC ({{ data.last_synced }})</span>
-                {% endif %}
-                <div style="margin-top: 10px;">
-                    <button type="button" class="btn-app-hub-trigger" onclick="openUltraAppModal()">
-                        📲 Get Mobile App / Share
-                    </button>
-                </div>
-            </div>
-            <div class="header-stats-card">
-                <span class="stats-label">OVERALL ATTENDANCE</span>
-                <div class="stats-num-wrap">
-                    <h2 class="stats-pct" id="overall-pct-display">{{ overall_pct }}%</h2>
-                    <span class="stats-status-pill {% if overall_pct >= 75 %}pct-safe{% else %}pct-danger{% endif %}">
-                        {% if overall_pct >= 75 %}Safe{% else %}Needs Boost{% endif %}
-                    </span>
-                </div>
-                <p class="stats-count">{{ overall_present }} / {{ overall_classes }} total lectures</p>
-            </div>
-        </header>
-
         <!-- 1. ATTENDANCE & SIMULATOR TAB -->
         <div id="tab-attendance" class="tab-panel active">
+
+            <header class="main-header">
+                <div class="header-student-info">
+                    <h1>Welcome back, {{ data.student_name }}!</h1>
+                    <p class="header-student-meta">Student ID: <b class="text-cyan">{{ data.student_id }}</b> <span
+                            class="meta-dot">•</span> Faculty Incharge: <b>{{ data.incharge }}</b></p>
+                    {% if data.is_offline %}
+                    <span class="sync-pill sync-offline">⚡ OFFLINE SNAPSHOT MODE (Last Synced: {{ data.last_synced
+                        }})</span>
+                    {% else %}
+                    <span class="sync-pill sync-live">● LIVE PORTAL SYNC ({{ data.last_synced }})</span>
+                    {% endif %}
+                    <div style="margin-top: 10px;">
+                        <button type="button" class="btn-app-hub-trigger" onclick="openUltraAppModal()">
+                            📲 Get Mobile App / Share
+                        </button>
+                    </div>
+                </div>
+                <div class="header-stats-card">
+                    <span class="stats-label">OVERALL ATTENDANCE</span>
+                    <div class="stats-num-wrap">
+                        <h2 class="stats-pct" id="overall-pct-display">{{ overall_pct }}%</h2>
+                        <span class="stats-status-pill {% if overall_pct >= 75 %}pct-safe{% else %}pct-danger{% endif %}">
+                            {% if overall_pct >= 75 %}Safe{% else %}Needs Boost{% endif %}
+                        </span>
+                    </div>
+                    <p class="stats-count">{{ overall_present }} / {{ overall_classes }} total lectures</p>
+                </div>
+            </header>
 
             <!-- 75% Danger Zone Warning Banner -->
             {% if danger_subjects %}
@@ -924,8 +924,8 @@
             <!-- Option 2: Download Raw Android APK -->
             <div class="app-hub-section">
                 <div class="section-head">
-                    <div class="section-title">📦 Download Raw Android APK</div>
-                    <span class="section-badge-purple">NATIVE APK</span>
+                    <div class="section-title">📦 Download Raw Android APK <span id="apk-version-badge" style="font-size: 0.75rem; margin-left: 6px; font-weight: 600;"></span></div>
+                    <span class="section-badge-purple">NATIVE APK (v2.1)</span>
                 </div>
                 <p class="section-desc">Direct signed Android APK (~2.5 MB). Full offline shell &amp; hardware back navigation.</p>
                 <a href="/download/UltraPortal.apk" class="btn-hub-action btn-hub-purple" download>

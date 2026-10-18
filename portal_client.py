@@ -494,8 +494,18 @@ class PortalClient:
                 "records": records
             }
 
-        with ThreadPoolExecutor(max_workers=8) as executor:
+        # Always fetch profile concurrently with subjects so every student gets full details immediately
+        with ThreadPoolExecutor(max_workers=9) as executor:
+            fut_profile = executor.submit(self.get_student_profile, dash_soup)
             subject_results = list(executor.map(fetch_subject, subjects))
+            profile_data = fut_profile.result()
+
+        student_email = ""
+        for k, v in profile_data.get("details", []):
+            if k.lower() == "name" and v:
+                student_name = v
+            elif "email" in k.lower() and v:
+                student_email = v
 
         all_records = []
         today_attendance = []
@@ -509,7 +519,7 @@ class PortalClient:
             return {
                 "student_id": self.student_id,
                 "student_name": student_name,
-                "student_email": "",
+                "student_email": student_email,
                 "incharge": incharge_name,
                 "today_date": today_pretty,
                 "last_synced": sync_time + " (Fast Sync)",
@@ -519,26 +529,17 @@ class PortalClient:
                 "calendar_records": all_records,
                 "subjects": subject_results,
                 "results": [],
-                "profile": {"photo_url": None, "details": []},
+                "profile": profile_data,
                 "fees": []
             }, None
 
-        # Fetch Results, Profile, and Fees in parallel so background sync is also 3x faster
-        with ThreadPoolExecutor(max_workers=3) as extra_exec:
+        # Fetch Results and Fees in parallel for complete sync
+        with ThreadPoolExecutor(max_workers=2) as extra_exec:
             f_results = extra_exec.submit(self.get_exam_results)
-            f_profile = extra_exec.submit(self.get_student_profile, dash_soup)
             f_fees = extra_exec.submit(self.get_fees, dash_soup)
 
             results_data = f_results.result()
-            profile_data = f_profile.result()
             fees_data = f_fees.result()
-
-        student_email = ""
-        for k, v in profile_data.get("details", []):
-            if k.lower() == "name":
-                student_name = v
-            elif "email" in k.lower():
-                student_email = v
 
         return {
             "student_id": self.student_id,

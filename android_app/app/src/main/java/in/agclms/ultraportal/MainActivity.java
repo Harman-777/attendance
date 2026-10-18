@@ -10,6 +10,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
+import java.net.URLEncoder;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintManager;
@@ -35,6 +37,16 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public String getAppVersion() {
+            return "2.1";
+        }
+
+        @JavascriptInterface
+        public int getAppVersionCode() {
+            return 3;
+        }
+
+        @JavascriptInterface
         public void printPage() {
             activity.runOnUiThread(new Runnable() {
                 @Override
@@ -49,15 +61,50 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void shareWhatsApp(final String message) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        intent.setData(Uri.parse("whatsapp://send?text=" + URLEncoder.encode(message, "UTF-8")));
+                        intent.setPackage("com.whatsapp");
+                        activity.startActivity(intent);
+                    } catch (Exception e) {
+                        try {
+                            Intent sendIntent = new Intent(Intent.ACTION_SEND);
+                            sendIntent.setType("text/plain");
+                            sendIntent.putExtra(Intent.EXTRA_TEXT, message);
+                            sendIntent.setPackage("com.whatsapp");
+                            activity.startActivity(sendIntent);
+                        } catch (Exception ex) {
+                            try {
+                                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://api.whatsapp.com/send?text=" + URLEncoder.encode(message, "UTF-8")));
+                                activity.startActivity(browserIntent);
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void shareApp(final String text, final String downloadUrl) {
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Intent sendIntent = new Intent();
-                    sendIntent.setAction(Intent.ACTION_SEND);
-                    sendIntent.putExtra(Intent.EXTRA_TEXT, text);
-                    sendIntent.setType("text/plain");
-                    activity.startActivity(Intent.createChooser(sendIntent, "Share Ultra Portal"));
+                    try {
+                        Intent sendIntent = new Intent();
+                        sendIntent.setAction(Intent.ACTION_SEND);
+                        sendIntent.putExtra(Intent.EXTRA_TEXT, text);
+                        sendIntent.putExtra(Intent.EXTRA_SUBJECT, "⚡ Ultra Portal — Student Workspace");
+                        sendIntent.setType("text/plain");
+                        Intent chooser = Intent.createChooser(sendIntent, "Share Ultra Portal via");
+                        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        activity.startActivity(chooser);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             });
         }
@@ -92,7 +139,7 @@ public class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " UltraPortalApp/2.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " UltraPortalApp/2.1");
 
         // Enable Cookies
         CookieManager cookieManager = CookieManager.getInstance();
@@ -104,10 +151,36 @@ public class MainActivity extends Activity {
         // Bridge native Android Print & Share capabilities
         webView.addJavascriptInterface(new WebAppInterface(this), "AndroidApp");
 
-        // Custom WebViewClient
+        // Custom WebViewClient with native intent interception
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                if (request != null && request.getUrl() != null) {
+                    String url = request.getUrl().toString();
+                    if (url.startsWith("whatsapp:") || url.startsWith("intent:") || url.startsWith("mailto:") || url.startsWith("tel:")) {
+                        try {
+                            Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                            if (intent != null) {
+                                view.getContext().startActivity(intent);
+                                return true;
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    if (url.contains("api.whatsapp.com") || url.contains("wa.me")) {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                            intent.setPackage("com.whatsapp");
+                            view.getContext().startActivity(intent);
+                            return true;
+                        } catch (Exception e) {
+                            try {
+                                Intent genericIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                view.getContext().startActivity(genericIntent);
+                                return true;
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                }
                 return false;
             }
 

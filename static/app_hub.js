@@ -127,7 +127,22 @@ function shareOnWhatsApp() {
     const origin = window.location.origin;
     const downloadUrl = origin + "/download/UltraPortal.apk";
     const msg = "⚡ Check your live college attendance in 0.4 seconds, calculate safe bunks, and get instant absent alerts!\n\n📲 Direct Android App Download: " + downloadUrl + "\n🌐 Web Workspace: " + origin;
-    window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg), "_blank");
+
+    // 1. Android APK native bridge -> launches WhatsApp mobile app directly
+    if (window.AndroidApp && typeof window.AndroidApp.shareWhatsApp === "function") {
+        window.AndroidApp.shareWhatsApp(msg);
+        return;
+    }
+
+    // 2. Mobile Browser -> try whatsapp:// URI first to open app, fallback to web
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = "whatsapp://send?text=" + encodeURIComponent(msg);
+        setTimeout(function () {
+            window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg), "_blank");
+        }, 800);
+    } else {
+        window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg), "_blank");
+    }
 }
 
 function shareNativeSheet() {
@@ -200,7 +215,59 @@ function showCopyFeedback() {
     }
 }
 
+// In-App APK Version & Auto-Update Checker
+function checkApkUpdate() {
+    const isApk = (window.AndroidApp !== undefined) || (navigator.userAgent && navigator.userAgent.includes("UltraPortalApp"));
+    if (!isApk) return;
+
+    fetch("/api/app-version")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            let installedVer = "2.0";
+            if (window.AndroidApp && typeof window.AndroidApp.getAppVersion === "function") {
+                installedVer = window.AndroidApp.getAppVersion();
+            } else {
+                const match = navigator.userAgent.match(/UltraPortalApp\/([\d\.]+)/);
+                if (match) installedVer = match[1];
+            }
+
+            const verBadge = document.getElementById("apk-version-badge");
+            if (verBadge) {
+                if (parseFloat(installedVer) >= parseFloat(data.latest_version)) {
+                    verBadge.textContent = "v" + installedVer + " (Latest Up-to-Date)";
+                    verBadge.style.color = "#4ade80";
+                } else {
+                    verBadge.textContent = "v" + installedVer + " (Update to v" + data.latest_version + " Available!)";
+                    verBadge.style.color = "#f59e0b";
+                }
+            }
+
+            // If installed version is older, display high-visibility 1-click update banner
+            if (parseFloat(installedVer) < parseFloat(data.latest_version)) {
+                if (document.getElementById("apk-update-banner")) return;
+                const banner = document.createElement("div");
+                banner.id = "apk-update-banner";
+                banner.style.cssText = "position: sticky; top: 0; z-index: 99999; background: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%); border-bottom: 2px solid #38bdf8; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.5);";
+                banner.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: #f8fafc;">
+                        <span style="font-size: 1.15rem;">🚀</span>
+                        <span><b>New Ultra Portal Update (v${data.latest_version})</b> is ready for your app!</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <a href="/download/UltraPortal.apk" style="background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff; text-decoration: none; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.4);">
+                            ⚡ 1-Click Update Now
+                        </a>
+                        <button type="button" onclick="this.parentElement.parentElement.remove()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer; padding: 0 6px;">✕</button>
+                    </div>
+                `;
+                document.body.prepend(banner);
+            }
+        })
+        .catch(function () {});
+}
+
 // Initial setup on load
 document.addEventListener("DOMContentLoaded", function () {
     updatePwaInstallButtonState();
+    checkApkUpdate();
 });
