@@ -8,7 +8,13 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowManager;
+import android.content.Context;
+import android.content.Intent;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -20,6 +26,42 @@ public class MainActivity extends Activity {
     private static final String PORTAL_URL = "https://attendance-liard-three.vercel.app";
     private static final int DARK_BG_COLOR = 0xFF090D16;
     private WebView webView;
+
+    public class WebAppInterface {
+        private final Activity activity;
+
+        WebAppInterface(Activity activity) {
+            this.activity = activity;
+        }
+
+        @JavascriptInterface
+        public void printPage() {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    PrintManager printManager = (PrintManager) activity.getSystemService(Context.PRINT_SERVICE);
+                    if (printManager != null && webView != null) {
+                        PrintDocumentAdapter printAdapter = webView.createPrintDocumentAdapter("UltraPortal_Report");
+                        printManager.print("UltraPortal_Report", printAdapter, new PrintAttributes.Builder().build());
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void shareApp(final String text, final String downloadUrl) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Intent sendIntent = new Intent();
+                    sendIntent.setAction(Intent.ACTION_SEND);
+                    sendIntent.putExtra(Intent.EXTRA_TEXT, text);
+                    sendIntent.setType("text/plain");
+                    activity.startActivity(Intent.createChooser(sendIntent, "Share Ultra Portal"));
+                }
+            });
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -59,6 +101,9 @@ public class MainActivity extends Activity {
             cookieManager.setAcceptThirdPartyCookies(webView, true);
         }
 
+        // Bridge native Android Print & Share capabilities
+        webView.addJavascriptInterface(new WebAppInterface(this), "AndroidApp");
+
         // Custom WebViewClient
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -69,6 +114,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                CookieManager.getInstance().flush();
             }
         });
 
@@ -80,6 +126,12 @@ public class MainActivity extends Activity {
         } else {
             webView.loadUrl(PORTAL_URL);
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        CookieManager.getInstance().flush();
     }
 
     // Hardware Back Button Navigation

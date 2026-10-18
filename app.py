@@ -67,7 +67,7 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=bool(os.environ.get("VERCEL")),
-    PERMANENT_SESSION_LIFETIME=timedelta(hours=12)
+    PERMANENT_SESSION_LIFETIME=timedelta(days=90)
 )
 
 
@@ -155,6 +155,11 @@ def login():
     error = None
     client_ip = get_trusted_client_ip()
 
+    # 1. 1-Click Persistent Login: If user is already authenticated, jump straight to dashboard
+    if request.method == "GET":
+        if session.get("student_id") and get_session_password():
+            return redirect(url_for("dashboard"))
+
     if request.method == "POST":
         if is_ip_rate_limited(client_ip, max_attempts=10, window_sec=600, scope="student"):
             return render_template(
@@ -175,6 +180,7 @@ def login():
         if db_user and db_user.get("encrypted_password") and db_user.get("cached_profile"):
             if decrypt_password(db_user["encrypted_password"]) == password:
                 clear_failed_logins(client_ip, scope="student")
+                session.permanent = True
                 session["student_id"] = student_id
                 set_session_password(password)
                 session["just_logged_in"] = True
@@ -189,6 +195,7 @@ def login():
             cached = (db_user.get("cached_profile") if db_user else None) or load_snapshot(student_id)
             if cached and "Portal unreachable" in (err or ""):
                 clear_failed_logins(client_ip, scope="student")
+                session.permanent = True
                 session["student_id"] = student_id
                 set_session_password(password)
                 session["just_logged_in"] = True
@@ -196,6 +203,7 @@ def login():
             error = err
         else:
             clear_failed_logins(client_ip, scope="student")
+            session.permanent = True
             session["student_id"] = student_id
             set_session_password(password)
             session["portal_cookies"] = client.get_cookies()

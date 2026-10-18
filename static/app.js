@@ -43,10 +43,14 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 2. 1-Click PDF Report Export (Desktop & Mobile)
+    // 2. 1-Click PDF Report Export (Desktop & Mobile App APK)
     document.querySelectorAll(".trigger-export-pdf, #btn-export-pdf").forEach(function (btn) {
         btn.addEventListener("click", function () {
-            window.print();
+            if (window.AndroidApp && typeof window.AndroidApp.printPage === "function") {
+                window.AndroidApp.printPage();
+            } else {
+                window.print();
+            }
         });
     });
 
@@ -628,8 +632,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (overallEl && res.overall_pct !== undefined) {
                         overallEl.textContent = res.overall_pct + "%";
                     }
-                    // If this was a cold-start partial load, reload once silently when full data is cached
-                    if (portalData.partial_load) {
+                    // If this was a cold-start partial load or missing profile, reload once silently when full data is cached
+                    if (portalData.partial_load || portalData.needs_profile_refresh) {
                         window.location.reload();
                     }
                 })

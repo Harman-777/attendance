@@ -124,21 +124,30 @@ document.addEventListener("keydown", function (e) {
 
 // Viral Share Actions
 function shareOnWhatsApp() {
-    const shareUrl = window.location.origin;
-    const msg = "⚡ Check your live college attendance in 0.4 seconds, calculate safe bunks, and get instant lock-screen absent alerts! Try Ultra Portal: " + shareUrl;
+    const origin = window.location.origin;
+    const downloadUrl = origin + "/download/UltraPortal.apk";
+    const msg = "⚡ Check your live college attendance in 0.4 seconds, calculate safe bunks, and get instant absent alerts!\n\n📲 Direct Android App Download: " + downloadUrl + "\n🌐 Web Workspace: " + origin;
     window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg), "_blank");
 }
 
 function shareNativeSheet() {
-    const shareUrl = window.location.origin;
-    const shareData = {
-        title: "⚡ Ultra Portal — Student Workspace",
-        text: "Check your live college attendance in 0.4 seconds, calculate safe bunks, and get instant lock-screen absent alerts!",
-        url: shareUrl
-    };
+    const origin = window.location.origin;
+    const downloadUrl = origin + "/download/UltraPortal.apk";
+    const shareText = "⚡ Ultra Portal — Check your live college attendance in 0.4 seconds, calculate safe bunks & get absent alerts!\n\n📲 Direct APK Download:\n" + downloadUrl + "\n\n🌐 Web Portal:\n" + origin;
 
+    // 1. Android APK native share drawer bridge
+    if (window.AndroidApp && typeof window.AndroidApp.shareApp === "function") {
+        window.AndroidApp.shareApp(shareText, downloadUrl);
+        return;
+    }
+
+    // 2. Standard Web Share API (Chrome / Safari / Edge mobile)
     if (navigator.share) {
-        navigator.share(shareData).catch(function () {
+        navigator.share({
+            title: "⚡ Ultra Portal — Student Workspace",
+            text: shareText,
+            url: downloadUrl
+        }).catch(function () {
             // Ignored if user dismissed sheet
         });
     } else {
@@ -147,15 +156,16 @@ function shareNativeSheet() {
 }
 
 function copyPortalShareLink() {
-    const shareUrl = window.location.origin;
+    const origin = window.location.origin;
+    const downloadUrl = origin + "/download/UltraPortal.apk";
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(shareUrl).then(function () {
+        navigator.clipboard.writeText(downloadUrl).then(function () {
             showCopyFeedback();
         }).catch(function () {
-            fallbackCopy(shareUrl);
+            fallbackCopy(downloadUrl);
         });
     } else {
-        fallbackCopy(shareUrl);
+        fallbackCopy(downloadUrl);
     }
 }
 
@@ -170,7 +180,7 @@ function fallbackCopy(text) {
         document.execCommand("copy");
         showCopyFeedback();
     } catch (e) {
-        prompt("Copy Ultra Portal Link:", text);
+        prompt("Copy Ultra Portal APK Download Link:", text);
     }
     document.body.removeChild(t);
 }
@@ -179,7 +189,7 @@ function showCopyFeedback() {
     const btn = document.getElementById("btn-copy-share-link");
     if (btn) {
         const originalHtml = btn.innerHTML;
-        btn.innerHTML = "<span>✔</span> Copied Link!";
+        btn.innerHTML = "<span>✔</span> Copied APK Link!";
         btn.style.borderColor = "#4ade80";
         btn.style.color = "#4ade80";
         setTimeout(function () {

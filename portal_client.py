@@ -133,98 +133,142 @@ class PortalClient:
 
     def get_student_profile(self, dash_soup):
         try:
-            profile_url = None
+            candidate_urls = []
             for a in dash_soup.find_all("a"):
-                txt = a.get_text(strip=True).lower()
+                txt = a.get_text(" ", strip=True).lower()
                 href = a.get("href", "")
-                if txt == "profile" or "profile" in href.lower():
-                    if href and href != "#":
-                        profile_url = urljoin(DASHBOARD_URL + "/", href)
-                        break
+                onclick = a.get("onclick", "")
+                if any(k in txt for k in ["profile", "bio", "student info", "personal", "details"]) or any(k in href.lower() for k in ["profile", "studentinfo", "biodata"]):
+                    if href and not href.startswith("#") and not href.startswith("javascript"):
+                        candidate_urls.append(urljoin(DASHBOARD_URL + "/", href))
+                    elif onclick:
+                        m = re.search(r"['\"]([^'\"]*profile[^'\"]*)['\"]", onclick, re.I)
+                        if m:
+                            candidate_urls.append(urljoin(DASHBOARD_URL + "/", m.group(1)))
 
-            candidate_urls = [profile_url] if profile_url else []
             candidate_urls.extend([
                 "https://agclms.in/DashBoardStudent/StudentProfile",
+                "https://agclms.in/DashBoardStudent/StudentProfileNew",
                 "https://agclms.in/DashBoardStudent/Profile",
-                "https://agclms.in/Student/Profile"
+                "https://agclms.in/DashBoardStudent/MyProfile",
+                "https://agclms.in/DashBoardStudent/StudentInfo",
+                "https://agclms.in/StudentProfile",
+                "https://agclms.in/Student/StudentProfile",
+                "https://agclms.in/Student/Profile",
+                "https://agclms.in/Student/StudentInfo"
             ])
+
+            # Deduplicate URLs maintaining order
+            seen_urls = set()
+            clean_candidates = []
+            for u in candidate_urls:
+                if u and u not in seen_urls:
+                    seen_urls.add(u)
+                    clean_candidates.append(u)
 
             p_soup = None
             active_url = DASHBOARD_URL
-            for url in candidate_urls:
-                if not url:
+            for url in clean_candidates:
+                try:
+                    r = self.session.get(url, timeout=8)
+                    if r.status_code == 200 and "StudentLogin" not in r.url and len(r.text) > 400:
+                        if any(k in r.text for k in ["Roll", "Student", "Class", "Course", "Father", "Mother", "Batch", "Mobile", "Email", "Enrollment"]):
+                            p_soup = BeautifulSoup(r.text, "html.parser")
+                            active_url = url
+                            break
+                except Exception:
                     continue
-                r = self.session.get(url, timeout=8)
-                if r.status_code == 200 and "StudentLogin" not in r.url and len(r.text) > 500:
-                    if "Batch" in r.text or "Father" in r.text or "Mobile" in r.text:
-                        p_soup = BeautifulSoup(r.text, "html.parser")
-                        active_url = url
-                        break
-
-            if not p_soup:
-                return {"photo_url": None, "details": []}
 
             photo_url = None
-            for img in p_soup.find_all("img"):
-                src = img.get("src", "")
-                if src and not any(ig in src.lower() for ig in ["logo", "naac", "banner", "icon"]):
-                    photo_url = urljoin(active_url, src)
-                    break
-
-            known_labels = [
-                "Name", "Student Id", "Email Id", "Mobile No",
-                "Batch", "Class Name", "University Rollno",
-                "Father Name", "Mother Name", "Date of Birth",
-                "Aadhaar No", "Address", "City", "State", "Country"
-            ]
-
             details = []
-            for tr in p_soup.find_all("tr"):
-                cells = [td.get_text(" ", strip=True) for td in tr.find_all(["th", "td"]) if td.get_text(strip=True)]
-                if len(cells) == 2:
-                    details.append((cells[0].rstrip(":"), cells[1]))
-                elif len(cells) >= 4:
-                    details.append((cells[0].rstrip(":"), cells[1]))
-                    details.append((cells[2].rstrip(":"), cells[3]))
 
-            if len(details) < 4:
-                strings = [s.strip().rstrip(":") for s in p_soup.stripped_strings if s.strip() and s.strip() != ":"]
-                lower_known = {k.lower(): k for k in known_labels}
+            if p_soup:
+                for img in p_soup.find_all("img"):
+                    src = img.get("src", "")
+                    if src and not any(ig in src.lower() for ig in ["logo", "naac", "banner", "icon", "footer", "header"]):
+                        photo_url = urljoin(active_url, src)
+                        break
 
-                for i, s in enumerate(strings):
-                    if s.lower() in lower_known and i + 1 < len(strings):
-                        nxt = strings[i + 1]
-                        if nxt.lower() not in lower_known:
-                            details.append((lower_known[s.lower()], nxt))
+                known_labels = [
+                    "Name", "Student Id", "Email Id", "Mobile No",
+                    "Batch", "Class Name", "University Rollno",
+                    "Father Name", "Mother Name", "Date of Birth",
+                    "Aadhaar No", "Address", "City", "State", "Country"
+                ]
+
+                for tr in p_soup.find_all("tr"):
+                    cells = [td.get_text(" ", strip=True) for td in tr.find_all(["th", "td"]) if td.get_text(strip=True)]
+                    if len(cells) == 2:
+                        details.append((cells[0].rstrip(":").strip(), cells[1].strip()))
+                    elif len(cells) >= 4:
+                        details.append((cells[0].rstrip(":").strip(), cells[1].strip()))
+                        details.append((cells[2].rstrip(":").strip(), cells[3].strip()))
 
                 if len(details) < 4:
-                    for group in [
-                        ["Name", "Student Id", "Email Id", "Mobile No"],
-                        ["Batch", "Class Name", "University Rollno", "Father Name", "Mother Name", "Date of Birth", "Aadhaar No", "Address", "City", "State", "Country"]
-                    ]:
-                        indices = []
-                        for lbl in group:
-                            for idx, text_item in enumerate(strings):
-                                if text_item.lower() == lbl.lower():
-                                    indices.append(idx)
-                                    break
-                        if len(indices) >= 3 and indices == sorted(indices):
-                            last_lbl_idx = indices[-1]
-                            count = len(indices)
-                            values = strings[last_lbl_idx + 1 : last_lbl_idx + 1 + count]
-                            for lbl_idx, val in zip(indices, values):
-                                details.append((strings[lbl_idx], val))
+                    strings = [s.strip().rstrip(":") for s in p_soup.stripped_strings if s.strip() and s.strip() != ":"]
+                    lower_known = {k.lower(): k for k in known_labels}
+
+                    for i, s in enumerate(strings):
+                        if s.lower() in lower_known and i + 1 < len(strings):
+                            nxt = strings[i + 1]
+                            if nxt.lower() not in lower_known:
+                                details.append((lower_known[s.lower()], nxt))
+
+                    if len(details) < 4:
+                        for group in [
+                            ["Name", "Student Id", "Email Id", "Mobile No"],
+                            ["Batch", "Class Name", "University Rollno", "Father Name", "Mother Name", "Date of Birth", "Aadhaar No", "Address", "City", "State", "Country"]
+                        ]:
+                            indices = []
+                            for lbl in group:
+                                for idx, text_item in enumerate(strings):
+                                    if text_item.lower() == lbl.lower():
+                                        indices.append(idx)
+                                        break
+                            if len(indices) >= 3 and indices == sorted(indices):
+                                last_lbl_idx = indices[-1]
+                                count = len(indices)
+                                values = strings[last_lbl_idx + 1 : last_lbl_idx + 1 + count]
+                                for lbl_idx, val in zip(indices, values):
+                                    details.append((strings[lbl_idx], val))
+
+            # Robust Dashboard Fallback: ensure core fields are always populated for every student
+            dash_text = dash_soup.get_text(" ", strip=True)
+            existing_keys = {k.lower() for k, v in details}
+
+            if "name" not in existing_keys:
+                name_match = re.search(r"Welcome\s+([A-Za-z\s]+?)(?:\||Student|Roll|Incharge|$)", dash_text, re.I)
+                if name_match:
+                    details.insert(0, ("Name", name_match.group(1).strip()))
+
+            if "student id" not in existing_keys and "university rollno" not in existing_keys:
+                details.append(("Student Id", str(self.student_id)))
+
+            if "faculty incharge" not in existing_keys:
+                inc_match = re.search(r"Incharge\s*Name\s*:\s*([A-Za-z\s\.]+?)(?:Subjects|Session|$)", dash_text, re.I)
+                if inc_match:
+                    details.append(("Faculty Incharge", inc_match.group(1).strip()))
+
+            sess_match = re.search(r"Session\s*:\s*([0-9\-\s]+)", dash_text, re.I)
+            if sess_match and "batch" not in existing_keys:
+                details.append(("Batch", sess_match.group(1).strip()))
+
+            cls_match = re.search(r"(?:Class|Course)\s*:\s*([A-Za-z0-9\-\.\s]+?)(?:\||Section|Roll|$)", dash_text, re.I)
+            if cls_match and "class name" not in existing_keys:
+                details.append(("Class Name", cls_match.group(1).strip()))
 
             unique_details = []
             seen = set()
             for k, v in details:
-                if k.lower() not in seen and v:
-                    seen.add(k.lower())
-                    unique_details.append((k, v))
+                k_clean = k.strip().rstrip(":")
+                v_clean = v.strip()
+                if k_clean.lower() not in seen and v_clean:
+                    seen.add(k_clean.lower())
+                    unique_details.append((k_clean, v_clean))
 
             return {"photo_url": photo_url, "details": unique_details}
         except Exception:
-            return {"photo_url": None, "details": []}
+            return {"photo_url": None, "details": [("Student Id", str(self.student_id))]}
 
     def get_exam_results(self):
         try:
@@ -250,6 +294,8 @@ class PortalClient:
                 s = BeautifulSoup(r.text, "html.parser")
                 tables = []
                 extracted_grades = []
+                has_reappear = False
+                reappear_subjects = []
 
                 for table in s.find_all("table"):
                     rows = []
@@ -257,14 +303,39 @@ class PortalClient:
                         cols = [td.get_text(strip=True) for td in tr.find_all(["th", "td"])]
                         if cols:
                             rows.append(cols)
+                            # Check for individual subject grades
                             for cell in cols:
-                                if cell.upper() in grade_points:
-                                    extracted_grades.append(grade_points[cell.upper()])
+                                cell_up = cell.upper()
+                                if cell_up in grade_points:
+                                    extracted_grades.append(grade_points[cell_up])
+
+                            # Detect Re-appear / Compartment / Backlog in subject row
+                            row_str = " ".join(cols).upper()
+                            is_reappear = (
+                                any(re.search(rf"\b{re.escape(k)}\b", row_str) for k in ["REAPPEAR", "RE-APPEAR", "FAIL", "COMPARTMENT", "BACKLOG"])
+                                or any(c.upper() in ["F", "RA", "AB"] for c in cols)
+                            )
+                            if is_reappear:
+                                has_reappear = True
+                                subj = cols[1] if len(cols) > 1 and not cols[1].isdigit() else (cols[2] if len(cols) > 2 else (cols[0] if cols else "Subject"))
+                                if subj and not any(h in subj.lower() for h in ["subject", "course", "paper", "s.no"]):
+                                    reappear_subjects.append(subj)
+
                     if rows:
                         tables.append(rows)
 
                 sgpa = round(sum(extracted_grades) / len(extracted_grades), 2) if extracted_grades else 0.0
-                return {"code": code, "semester": sem_name, "tables": tables, "sgpa": sgpa}
+                status = "RE-APPEAR" if has_reappear else ("PASSED" if sgpa > 0 else "PUBLISHED")
+
+                return {
+                    "code": code,
+                    "semester": sem_name,
+                    "tables": tables,
+                    "sgpa": sgpa,
+                    "has_reappear": has_reappear,
+                    "reappear_subjects": list(dict.fromkeys(reappear_subjects)),
+                    "status": status
+                }
 
             with ThreadPoolExecutor(max_workers=5) as executor:
                 return list(executor.map(fetch_single_sem, options))
@@ -273,22 +344,46 @@ class PortalClient:
 
     def get_fees(self, dash_soup):
         try:
-            fee_tables = []
+            candidate_urls = []
             for a in dash_soup.find_all("a"):
                 href = a.get("href", "")
                 txt = a.get_text(strip=True).lower()
-                if ("fee" in txt or "fee" in href.lower()) and href and href != "#":
-                    f_url = urljoin(DASHBOARD_URL + "/", href)
+                if any(k in txt or k in href.lower() for k in ["fee", "dues", "ledger", "receipt"]):
+                    if href and not href.startswith("#"):
+                        candidate_urls.append(urljoin(DASHBOARD_URL + "/", href))
+
+            candidate_urls.extend([
+                "https://agclms.in/DashBoardStudent/StudentFeeDetails",
+                "https://agclms.in/DashBoardStudent/FeeDetails",
+                "https://agclms.in/DashBoardStudent/Fees",
+                "https://agclms.in/StudentFee/StudentFeeDetails",
+                "https://agclms.in/DashBoardStudent/FeeReceipt",
+                "https://agclms.in/Student/FeeDetails"
+            ])
+
+            seen_fee_urls = set()
+            fee_tables = []
+            for f_url in candidate_urls:
+                if not f_url or f_url in seen_fee_urls:
+                    continue
+                seen_fee_urls.add(f_url)
+                try:
                     r = self.session.get(f_url, timeout=8)
-                    s = BeautifulSoup(r.text, "html.parser")
-                    for table in s.find_all("table"):
-                        rows = []
-                        for tr in table.find_all("tr"):
-                            cols = [td.get_text(strip=True) for td in tr.find_all(["th", "td"])]
-                            if cols:
-                                rows.append(cols)
-                        if rows:
-                            fee_tables.append(rows)
+                    if r.status_code == 200 and "StudentLogin" not in r.url and len(r.text) > 400:
+                        s = BeautifulSoup(r.text, "html.parser")
+                        for table in s.find_all("table"):
+                            rows = []
+                            for tr in table.find_all("tr"):
+                                cols = [td.get_text(strip=True) for td in tr.find_all(["th", "td"])]
+                                if cols:
+                                    rows.append(cols)
+                            if rows and len(rows) > 0:
+                                fee_tables.append(rows)
+                        if fee_tables:
+                            break
+                except Exception:
+                    continue
+
             return fee_tables
         except Exception:
             return []
