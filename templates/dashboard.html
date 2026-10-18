@@ -504,13 +504,7 @@
                             🛡️ Vault is currently EMPTY (Session-Only Privacy Mode)
                             {% endif %}
                         </p>
-                        <p id="vault-status-msg" style="font-size: 0.85rem; margin-top: 8px; font-weight: 600;">
-                        {% if vault_enabled %}
-                            <span style="color: #4ade80;">✔ Password is encrypted in Supabase Vault (0.4s Instant Login & Background Sync Active)</span>
-                        {% else %}
-                            <span style="color: #fbbf24;">🛡️ Vault is currently EMPTY (Session-Only Privacy Mode)</span>
-                        {% endif %}
-                    </p>
+
 <style>
                         .ultra-fb-wrap {
                             margin-top: 22px;
@@ -925,10 +919,10 @@
             <div class="app-hub-section">
                 <div class="section-head">
                     <div class="section-title">📦 Download Raw Android APK <span id="apk-version-badge" style="font-size: 0.75rem; margin-left: 6px; font-weight: 600;"></span></div>
-                    <span class="section-badge-purple">NATIVE APK (v2.1)</span>
+                    <span class="section-badge-purple">NATIVE APK (v2.2)</span>
                 </div>
                 <p class="section-desc">Direct signed Android APK (~2.5 MB). Full offline shell &amp; hardware back navigation.</p>
-                <a href="/download/UltraPortal.apk" class="btn-hub-action btn-hub-purple" download>
+                <a href="/download/UltraPortal.apk" class="btn-hub-action btn-hub-purple" download onclick="triggerApkUpdate();">
                     ⬇️ Download UltraPortal.apk
                 </a>
                 <p style="font-size: 0.72rem; color: #94a3b8; margin-top: 8px; line-height: 1.4;">

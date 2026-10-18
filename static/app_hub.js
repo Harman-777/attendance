@@ -58,6 +58,38 @@ function updatePwaInstallButtonState() {
     }
 }
 
+function triggerApkUpdate() {
+    const apkUrl = window.location.origin + "/download/UltraPortal.apk";
+
+    // 1. If running in native APK with Java bridge (v2.1+)
+    if (window.AndroidApp && typeof window.AndroidApp.downloadUpdate === "function") {
+        window.AndroidApp.downloadUpdate(apkUrl);
+        return;
+    }
+
+    // 2. Android Intent delegation to system browser / download manager
+    if (/Android/i.test(navigator.userAgent)) {
+        try {
+            const hostPath = window.location.host + "/download/UltraPortal.apk";
+            const intentUrl = "intent://" + hostPath + "#Intent;scheme=https;action=android.intent.action.VIEW;end;";
+            const a = document.createElement("a");
+            a.href = intentUrl;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch (e) {}
+
+        // Immediate direct navigation fallback
+        setTimeout(function () {
+            window.location.href = apkUrl;
+        }, 400);
+        return;
+    }
+
+    // 3. Desktop / General browser direct download
+    window.location.href = apkUrl;
+}
+
 function triggerPwaInstall() {
     if (deferredInstallPrompt) {
         deferredInstallPrompt.prompt();
@@ -72,7 +104,10 @@ function triggerPwaInstall() {
         const iosBox = document.getElementById("ios-install-guide");
         if (iosBox) iosBox.style.display = "block";
     } else {
-        alert("To install: Tap your browser's menu (⋮ or Share) and select 'Install app' or 'Add to Home screen'.");
+        const confirmDownload = confirm("WebAPK prompt is preparing. Would you like to download the direct signed Android APK (UltraPortal.apk) right now?");
+        if (confirmDownload) {
+            triggerApkUpdate();
+        }
     }
 }
 
@@ -254,9 +289,9 @@ function checkApkUpdate() {
                         <span><b>New Ultra Portal Update (v${data.latest_version})</b> is ready for your app!</span>
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center;">
-                        <a href="/download/UltraPortal.apk" style="background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff; text-decoration: none; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.4);">
+                        <button type="button" onclick="triggerApkUpdate()" style="background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff; border: none; cursor: pointer; padding: 7px 16px; border-radius: 8px; font-weight: 700; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.4);">
                             ⚡ 1-Click Update Now
-                        </a>
+                        </button>
                         <button type="button" onclick="this.parentElement.parentElement.remove()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer; padding: 0 6px;">✕</button>
                     </div>
                 `;

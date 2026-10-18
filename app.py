@@ -6,7 +6,7 @@ import hashlib
 from datetime import timedelta
 from functools import wraps
 from urllib.parse import urlparse
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory, send_file, make_response
 from portal_client import PortalClient
 from notifier import (
     save_snapshot,
@@ -738,28 +738,32 @@ def assetlinks():
 def download_apk():
     apk_path = os.path.join(static_dir, "apk", "UltraPortal.apk")
     if os.path.isfile(apk_path):
-        return send_file(
+        resp = make_response(send_file(
             apk_path,
             as_attachment=True,
             download_name="UltraPortal.apk",
             mimetype="application/vnd.android.package-archive"
-        )
+        ))
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
     return redirect("https://github.com/Harman-777/attendance/releases/latest/download/UltraPortal.apk")
 
 
 @app.route("/api/app-version")
 def api_app_version():
     return jsonify({
-        "latest_version": "2.1",
-        "version_code": 3,
+        "latest_version": "2.2",
+        "version_code": 4,
         "release_date": "18 Oct 2026",
         "download_url": "/download/UltraPortal.apk",
         "changelog": [
-            "Welcome section streamlined to Attendance & Simulator tab only",
-            "Full 15-field official student profile sync for all students",
+            "Native Android DownloadListener & 1-Click Update system",
+            "Universal PWA WebAPK installability with service worker fetch handler",
             "Direct WhatsApp mobile app integration (bypasses browser)",
             "Native Android Share Sheet drawer with direct APK download link",
-            "Built-in APK update notification and 1-click update downloader"
+            "Full 15-field official student profile sync for all students"
         ]
     })
 

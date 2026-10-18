@@ -6,6 +6,15 @@ self.addEventListener("activate", function (event) {
     event.waitUntil(self.clients.claim());
 });
 
+// Pass-through fetch event handler required for Google Chrome & WebAPK installability
+self.addEventListener("fetch", function (event) {
+    event.respondWith(
+        fetch(event.request).catch(function () {
+            return caches.match(event.request);
+        })
+    );
+});
+
 self.addEventListener("push", function (event) {
     let payload = {
         title: "⚠️ Ultra Portal Attendance Alert",
