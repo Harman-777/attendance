@@ -125,6 +125,19 @@ public class MainActivity extends Activity {
                 }
             });
         }
+
+        @JavascriptInterface
+        public void reloadPortal() {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (webView != null) {
+                        webView.clearCache(true);
+                        webView.reload();
+                    }
+                }
+            });
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -238,6 +251,12 @@ public class MainActivity extends Activity {
         } else {
             webView.loadUrl(PORTAL_URL);
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        CookieManager.getInstance().flush();
     }
 
     @Override

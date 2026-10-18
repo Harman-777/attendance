@@ -8,6 +8,9 @@ on:
     paths:
       - 'android_app/**'
       - '.github/workflows/build_apk.yml'
+      - 'templates/**'
+      - 'static/**'
+      - 'app.py'
 
 permissions:
   contents: write

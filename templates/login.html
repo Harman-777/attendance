@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#090d16">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-    <link rel="stylesheet" href="/static/app_hub.css">
+    <link rel="stylesheet" href="/static/app_hub.css?v={{ app_version }}">
     <title>Ultra Portal - Login</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -242,7 +242,7 @@
     </style>
 
     <script src="/static/qrcode.min.js"></script>
-    <script src="/static/app_hub.js"></script>
+    <script src="/static/app_hub.js?v={{ app_version }}"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const loginForm = document.querySelector("form");

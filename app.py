@@ -150,6 +150,11 @@ def apply_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["X-XSS-Protection"] = "1; mode=block"
+    # Never cache dynamic HTML responses so installed APKs & browsers always receive live updates instantly
+    if request.path in ("/", "/dashboard", "/update", "/admin") or "text/html" in (response.mimetype or ""):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
     return response
 
 

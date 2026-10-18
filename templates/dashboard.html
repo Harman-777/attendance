@@ -7,8 +7,8 @@
     <meta name="theme-color" content="#090d16">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-    <link rel="stylesheet" href="/static/app_hub.css">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/app_hub.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/style.css?v={{ app_version }}">
     <title>Ultra Student Workspace</title>
 </head>
 
@@ -890,7 +890,7 @@
             "needs_profile_refresh": (not data.profile or not data.profile.details or data.profile.details|length < 3)
         } | tojson }}
     </script>
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v={{ app_version }}"></script>
 
     <!-- Ultra Mobile App Hub & Share Modal -->
     <div id="ultra-app-modal" class="app-modal-overlay">
@@ -971,6 +971,6 @@
     </div>
 
     <script src="/static/qrcode.min.js"></script>
-    <script src="/static/app_hub.js"></script>
+    <script src="/static/app_hub.js?v={{ app_version }}"></script>
 </body>
 </html>

@@ -266,8 +266,19 @@ function checkApkUpdate() {
                 }
             }
 
-            // If installed version is older, display high-visibility 1-click update banner
+            // If installed version is older, display high-visibility 1-click update banner & badge highlights
             if (parseFloat(installedVer) < parseFloat(data.latest_version)) {
+                // Highlight header & sidebar badges as clickable update triggers
+                const appBadges = document.querySelectorAll(".app-badge");
+                appBadges.forEach(function (badge) {
+                    badge.innerHTML = "UPDATE v" + data.latest_version + " ⚡";
+                    badge.style.background = "linear-gradient(135deg, #d97706, #b45309)";
+                    badge.style.color = "#ffffff";
+                    badge.style.cursor = "pointer";
+                    badge.style.border = "1px solid #f59e0b";
+                    badge.onclick = triggerApkUpdate;
+                });
+
                 if (document.getElementById("apk-update-banner")) return;
                 const banner = document.createElement("div");
                 banner.id = "apk-update-banner";
