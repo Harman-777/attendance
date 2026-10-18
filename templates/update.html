@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ultra Portal Update Center — v2.2</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --card-bg: rgba(15, 23, 42, 0.85);
+            --border-color: rgba(56, 189, 248, 0.25);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --cyan: #38bdf8;
+            --green: #4ade80;
+            --blue: #2563eb;
+            --purple: #7c3aed;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .update-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            max-width: 480px;
+            width: 100%;
+            padding: 28px 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(16px);
+            text-align: center;
+        }
+        .update-badge {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--cyan);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            margin-bottom: 12px;
+            letter-spacing: 0.05em;
+        }
+        .update-title {
+            font-size: 1.45rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .update-desc {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            line-height: 1.5;
+            margin-bottom: 22px;
+        }
+        .changelog-box {
+            background: rgba(2, 6, 23, 0.6);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            padding: 14px 16px;
+            text-align: left;
+            margin-bottom: 24px;
+            font-size: 0.82rem;
+            color: #cbd5e1;
+        }
+        .changelog-box b {
+            color: var(--cyan);
+            display: block;
+            margin-bottom: 8px;
+        }
+        .changelog-box li {
+            margin-left: 18px;
+            margin-bottom: 4px;
+        }
+        .btn-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            margin-bottom: 12px;
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+        .btn-action:active {
+            transform: scale(0.98);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.6);
+            color: #e2e8f0;
+        }
+        .btn-return {
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 8px;
+            text-decoration: underline;
+            cursor: pointer;
+            border: none;
+        }
+        .copy-confirm {
+            font-size: 0.8rem;
+            color: var(--green);
+            margin-top: 8px;
+            min-height: 18px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="update-card">
+        <span class="update-badge">⚡ OFFICIAL UPDATE CENTER</span>
+        <h1 class="update-title">Ultra Portal v2.2</h1>
+        <p class="update-desc">
+            An updated signed Android APK is ready with native background auto-updates, faster timetable sync, and direct WhatsApp mobile integration.
+        </p>
+
+        <div class="changelog-box">
+            <b>✨ What's New in v2.2:</b>
+            <ul>
+                <li>⚡ Native Android DownloadManager &amp; 1-Click update system</li>
+                <li>📲 Direct WhatsApp mobile app launch (no web QR code)</li>
+                <li>📤 System Share Drawer with direct download link</li>
+                <li>🎯 Welcome header streamlined to Attendance tab only</li>
+                <li>👤 Full 15-field official student profile instant extraction</li>
+            </ul>
+        </div>
+
+        <a href="/download/UltraPortal.apk" id="btn-direct-download" class="btn-action btn-primary" download>
+            ⬇️ Download UltraPortal.apk (~2.5 MB)
+        </a>
+
+        <button type="button" id="btn-copy-update-link" class="btn-action btn-secondary" onclick="copyUpdateLink()">
+            📋 Copy Download Link
+        </button>
+
+        <button type="button" id="btn-share-update" class="btn-action btn-secondary" onclick="shareUpdateLink()">
+            📤 Open via System App / Share
+        </button>
+
+        <p id="copy-status" class="copy-confirm"></p>
+
+        <a href="/" class="btn-return">← Back to Ultra Portal</a>
+    </div>
+
+    <script>
+        const downloadUrl = window.location.origin + "/download/UltraPortal.apk";
+
+        function copyUpdateLink() {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(downloadUrl).then(showFeedback);
+            } else {
+                const ta = document.createElement("textarea");
+                ta.value = downloadUrl;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+                showFeedback();
+            }
+        }
+
+        function showFeedback() {
+            const p = document.getElementById("copy-status");
+            if (p) {
+                p.textContent = "✔ Direct APK download link copied to clipboard!";
+                setTimeout(function () { p.textContent = ""; }, 4000);
+            }
+        }
+
+        function shareUpdateLink() {
+            const msg = "⚡ Download Ultra Portal v2.2 APK: " + downloadUrl;
+            if (window.AndroidApp && typeof window.AndroidApp.shareApp === "function") {
+                window.AndroidApp.shareApp(msg, downloadUrl);
+            } else if (navigator.share) {
+                navigator.share({
+                    title: "Ultra Portal v2.2 Update",
+                    text: msg,
+                    url: downloadUrl
+                }).catch(function () {});
+            } else {
+                copyUpdateLink();
+            }
+        }
+
+        // If visited from a native shell with download bridge
+        document.getElementById("btn-direct-download").addEventListener("click", function (e) {
+            if (window.AndroidApp && typeof window.AndroidApp.downloadUpdate === "function") {
+                e.preventDefault();
+                window.AndroidApp.downloadUpdate(downloadUrl);
+            }
+        });
+    </script>
+</body>
+</html>

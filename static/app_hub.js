@@ -61,32 +61,22 @@ function updatePwaInstallButtonState() {
 function triggerApkUpdate() {
     const apkUrl = window.location.origin + "/download/UltraPortal.apk";
 
-    // 1. If running in native APK with Java bridge (v2.1+)
+    // 1. If running in updated native APK with Java download bridge (v2.2+)
     if (window.AndroidApp && typeof window.AndroidApp.downloadUpdate === "function") {
         window.AndroidApp.downloadUpdate(apkUrl);
         return;
     }
 
-    // 2. Android Intent delegation to system browser / download manager
-    if (/Android/i.test(navigator.userAgent)) {
-        try {
-            const hostPath = window.location.host + "/download/UltraPortal.apk";
-            const intentUrl = "intent://" + hostPath + "#Intent;scheme=https;action=android.intent.action.VIEW;end;";
-            const a = document.createElement("a");
-            a.href = intentUrl;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        } catch (e) {}
-
-        // Immediate direct navigation fallback
-        setTimeout(function () {
-            window.location.href = apkUrl;
-        }, 400);
+    // 2. If running in older APK shell (v2.0) that lacks native download bridge
+    // NEVER attempt intent:// scheme because WebView will error with net::ERR_UNKNOWN_URL_SCHEME.
+    // Instead, navigate safely to the dedicated /update Center page inside the WebView.
+    const isApk = (window.AndroidApp !== undefined) || (navigator.userAgent && navigator.userAgent.includes("UltraPortalApp"));
+    if (isApk) {
+        window.location.href = "/update";
         return;
     }
 
-    // 3. Desktop / General browser direct download
+    // 3. Desktop / Mobile Web Browsers (Chrome, Edge, Safari, Samsung Internet)
     window.location.href = apkUrl;
 }
 
