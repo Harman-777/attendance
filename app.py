@@ -53,6 +53,9 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
+APP_VERSION = "v2.2"
+APP_VERSION_CODE = 4
+
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
 if not secret_key:
@@ -208,6 +211,13 @@ def login():
             set_session_password(password)
             session["portal_cookies"] = client.get_cookies()
             session["just_logged_in"] = True
+            try:
+                fast_data, _ = client.get_full_profile(fast_mode=True)
+                if fast_data and fast_data.get("subjects"):
+                    save_snapshot(student_id, fast_data)
+                    sync_user_to_supabase(student_id, password, fast_data, is_login_event=False, save_vault=save_vault)
+            except Exception as e:
+                print(f"[Fast Login Scrape] Pre-scrape non-fatal error: {e}")
             return redirect(url_for("dashboard"))
 
     return render_template("login.html", error=error)
@@ -320,6 +330,10 @@ def api_background_sync():
         "today_attendance": data.get("today_attendance", []),
         "calendar_records": data.get("calendar_records", []),
         "new_absents": new_absents,
+        "results": data.get("results", []),
+        "sgpa_trend": data.get("sgpa_trend", []),
+        "fees": data.get("fees", []),
+        "profile": data.get("profile", {}),
         "partial_was_upgraded": True
     })
 
@@ -754,8 +768,8 @@ def download_apk():
 @app.route("/api/app-version")
 def api_app_version():
     return jsonify({
-        "latest_version": "2.2",
-        "version_code": 4,
+        "latest_version": APP_VERSION.lstrip("v"),
+        "version_code": APP_VERSION_CODE,
         "release_date": "18 Oct 2026",
         "download_url": "/download/UltraPortal.apk",
         "changelog": [
@@ -771,6 +785,11 @@ def api_app_version():
 @app.route("/update")
 def page_update():
     return render_template("update.html")
+
+@app.context_processor
+def inject_app_version():
+    return {"app_version": APP_VERSION}
+
 
 
 if __name__ == "__main__":

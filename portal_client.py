@@ -3,6 +3,7 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin
 import requests
+from requests.adapters import HTTPAdapter
 from bs4 import BeautifulSoup
 
 LOGIN_URL = "https://agclms.in/Elogin/StudentLogin"
@@ -15,8 +16,12 @@ class PortalClient:
         self.student_id = student_id
         self.password = password
         self.session = requests.Session()
+        adapter = HTTPAdapter(pool_connections=15, pool_maxsize=15, max_retries=1)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
         self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Connection": "keep-alive"
         })
         self.logged_in = False
         if cookies:
@@ -270,14 +275,58 @@ class PortalClient:
         except Exception:
             return {"photo_url": None, "details": [("Student Id", str(self.student_id))]}
 
-    def get_exam_results(self):
+    def get_exam_results(self, dash_soup=None):
         try:
-            res = self.session.get(RESULTS_URL, timeout=8)
+            candidate_urls = []
+            if dash_soup:
+                for a in dash_soup.find_all("a"):
+                    txt = a.get_text(" ", strip=True).lower()
+                    href = a.get("href", "")
+                    if any(k in txt or k in href.lower() for k in ["result", "marksheet", "grade", "marks", "exam"]):
+                        if href and not href.startswith("#") and not href.startswith("javascript"):
+                            candidate_urls.append(urljoin(DASHBOARD_URL + "/", href))
+
+            candidate_urls.extend([
+                RESULTS_URL,
+                "https://agclms.in/DashBoardStudent/Results",
+                "https://agclms.in/DashBoardStudent/StudentResult",
+                "https://agclms.in/DashBoardStudent/ExamResult",
+                "https://agclms.in/StudentResult",
+                "https://agclms.in/Student/StudentResult",
+                "https://agclms.in/Student/Results"
+            ])
+
+            seen_r_urls = set()
+            clean_candidates = []
+            for u in candidate_urls:
+                if u and u not in seen_r_urls:
+                    seen_r_urls.add(u)
+                    clean_candidates.append(u)
+
+            res = None
+            active_results_url = RESULTS_URL
+            for url in clean_candidates:
+                try:
+                    r = self.session.get(url, timeout=8)
+                    if r.status_code == 200 and "StudentLogin" not in r.url and len(r.text) > 400:
+                        s = BeautifulSoup(r.text, "html.parser")
+                        select = s.find("select", {"name": re.compile(r"ClassCode|Semester|Sem|Course", re.I)}) or s.find("select")
+                        if select:
+                            res = r
+                            active_results_url = url
+                            break
+                except Exception:
+                    continue
+
+            if not res:
+                return []
+
             soup = BeautifulSoup(res.text, "html.parser")
-            select = soup.find("select", {"name": "ClassCode"})
+            select = soup.find("select", {"name": re.compile(r"ClassCode|Semester|Sem|Course", re.I)}) or soup.find("select")
             if not select:
                 return []
 
+            param_name = select.get("name", "ClassCode")
             options = []
             for opt in select.find_all("option"):
                 val = opt.get("value", "").strip()
@@ -289,7 +338,7 @@ class PortalClient:
 
             def fetch_single_sem(item):
                 code, sem_name = item
-                sem_url = f"{RESULTS_URL}?ClassCode={code}"
+                sem_url = f"{active_results_url}?{param_name}={code}"
                 r = self.session.get(sem_url, timeout=8)
                 s = BeautifulSoup(r.text, "html.parser")
                 tables = []
@@ -535,7 +584,7 @@ class PortalClient:
 
         # Fetch Results and Fees in parallel for complete sync
         with ThreadPoolExecutor(max_workers=2) as extra_exec:
-            f_results = extra_exec.submit(self.get_exam_results)
+            f_results = extra_exec.submit(self.get_exam_results, dash_soup)
             f_fees = extra_exec.submit(self.get_fees, dash_soup)
 
             results_data = f_results.result()

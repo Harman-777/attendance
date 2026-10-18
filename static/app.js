@@ -632,9 +632,26 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (overallEl && res.overall_pct !== undefined) {
                         overallEl.textContent = res.overall_pct + "%";
                     }
-                    // If this was a cold-start partial load or missing profile, reload once silently when full data is cached
-                    if (portalData.partial_load || portalData.needs_profile_refresh) {
-                        window.location.reload();
+
+                    // Background Sync Toast
+                    const syncToast = document.getElementById("bg-sync-toast");
+                    if (syncToast) {
+                        syncToast.textContent = "✨ Sync Complete: Records & Profile Updated";
+                        syncToast.style.opacity = "1";
+                        syncToast.style.transform = "translateY(0)";
+                        setTimeout(function () {
+                            syncToast.style.opacity = "0";
+                            syncToast.style.transform = "translateY(-10px)";
+                        }, 3500);
+                    }
+
+                    // If this was a cold-start partial load, or if results were missing and now retrieved, reload once silently
+                    const hadNoResults = (!portalData.results || portalData.results.length === 0);
+                    const nowHasResults = (res.results && res.results.length > 0);
+                    if (portalData.partial_load || portalData.needs_profile_refresh || (hadNoResults && nowHasResults)) {
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 600);
                     }
                 })
                 .catch(function () {});

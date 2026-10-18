@@ -114,7 +114,7 @@
 <body>
     <div class="login-card">
         <div class="text-center">
-            <span class="badge">PWA APP &amp; OFFLINE READY</span>
+            <span class="badge">OFFICIAL {{ app_version }} • PWA READY</span>
             <h1>⚡ Ultra Portal</h1>
             <p class="subtitle">Attendance Intelligence, Analytics &amp; Student Workspace</p>
         </div>
@@ -173,7 +173,7 @@
             <div class="app-hub-section">
                 <div class="section-head">
                     <div class="section-title">📦 Download Raw Android APK <span id="apk-version-badge" style="font-size: 0.75rem; margin-left: 6px; font-weight: 600;"></span></div>
-                    <span class="section-badge-purple">NATIVE APK (v2.2)</span>
+                    <span class="section-badge-purple">NATIVE APK ({{ app_version }})</span>
                 </div>
                 <p class="section-desc">Direct signed Android APK (~2.5 MB). Full offline shell &amp; hardware back navigation.</p>
                 <a href="/download/UltraPortal.apk" class="btn-hub-action btn-hub-purple" download onclick="triggerApkUpdate();">
@@ -220,7 +220,70 @@
         </div>
     </div>
 
+    <!-- Fullscreen Cyber-Loading Overlay -->
+    <div id="ultra-login-loader" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(9, 13, 22, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); align-items: center; justify-content: center; flex-direction: column; padding: 24px; text-align: center;">
+        <div style="position: relative; width: 88px; height: 88px; margin-bottom: 24px;">
+            <div style="position: absolute; inset: 0; border: 3px solid rgba(56, 189, 248, 0.15); border-radius: 50%;"></div>
+            <div style="position: absolute; inset: 0; border: 3px solid transparent; border-top-color: #38bdf8; border-right-color: #818cf8; border-radius: 50%; animation: loader-spin 0.85s linear infinite;"></div>
+            <div style="position: absolute; inset: 10px; border: 2px dashed rgba(56, 189, 248, 0.35); border-radius: 50%; animation: loader-reverse-spin 2.2s linear infinite;"></div>
+            <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">⚡</div>
+        </div>
+        <h3 style="font-size: 1.2rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px; letter-spacing: 0.02em;">Initializing Ultra Workspace</h3>
+        <p id="loader-status-msg" style="font-size: 0.88rem; color: #38bdf8; min-height: 22px; margin-bottom: 20px; font-weight: 600; transition: opacity 0.2s ease;">Establishing Secure Handshake with College Portal...</p>
+        <div style="width: 100%; max-width: 290px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 14px;">
+            <div id="loader-progress-bar" style="width: 15%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); border-radius: 10px; transition: width 0.3s ease;"></div>
+        </div>
+        <span style="font-size: 0.72rem; color: #64748b; font-weight: 500;">AES-256 Cloud Vault • High-Speed Connection Pool</span>
+    </div>
+
+    <style>
+        @keyframes loader-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes loader-reverse-spin { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+    </style>
+
     <script src="/static/qrcode.min.js"></script>
     <script src="/static/app_hub.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const loginForm = document.querySelector("form");
+            const loader = document.getElementById("ultra-login-loader");
+            const statusEl = document.getElementById("loader-status-msg");
+            const barEl = document.getElementById("loader-progress-bar");
+
+            if (loginForm && loader) {
+                loginForm.addEventListener("submit", function () {
+                    loader.style.display = "flex";
+
+                    const messages = [
+                        "Establishing Secure Handshake with College Portal...",
+                        "Bypassing Captchas & Decrypting Session Tokens...",
+                        "Scraping Live Attendance & Calculating Safe Bunks...",
+                        "Synthesizing Exam Records & Finalizing Workspace..."
+                    ];
+                    let msgIdx = 0;
+                    let currentProgress = 15;
+
+                    setInterval(function () {
+                        if (currentProgress < 92) {
+                            currentProgress += Math.floor(Math.random() * 12) + 8;
+                            if (currentProgress > 92) currentProgress = 92;
+                            if (barEl) barEl.style.width = currentProgress + "%";
+                        }
+                    }, 300);
+
+                    setInterval(function () {
+                        msgIdx++;
+                        if (msgIdx < messages.length && statusEl) {
+                            statusEl.style.opacity = "0";
+                            setTimeout(function () {
+                                statusEl.textContent = messages[msgIdx];
+                                statusEl.style.opacity = "1";
+                            }, 200);
+                        }
+                    }, 1200);
+                });
+            }
+        });
+    </script>
 </body>
 </html>

@@ -124,11 +124,13 @@ def sync_user_to_supabase(student_id: str, plain_password: str, data: dict, is_l
     old_absents = set(existing.get("known_absents") or []) if existing else set()
     login_count = (existing.get("login_count") or 0) + (1 if is_login_event else 0) if existing else 1
 
-    # Preserve incomplete fields if this was a fast attendance-only load
-    if existing and existing.get("cached_profile") and data.get("partial_load"):
+    # Preserve non-empty results, sgpa_trend, fees, and profile from previous cache
+    if existing and existing.get("cached_profile"):
         old_cache = existing["cached_profile"]
         if not data.get("results") and old_cache.get("results"):
             data["results"] = old_cache["results"]
+        if not data.get("sgpa_trend") and old_cache.get("sgpa_trend"):
+            data["sgpa_trend"] = old_cache["sgpa_trend"]
         if not data.get("fees") and old_cache.get("fees"):
             data["fees"] = old_cache["fees"]
         if (not data.get("profile") or not data["profile"].get("details")) and old_cache.get("profile"):
