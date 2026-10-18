@@ -29,8 +29,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Gradle
+      - name: Setup Gradle 8.2
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.2'
 
       - name: Ensure Release Keystore Exists
         run: |
@@ -49,18 +51,21 @@ jobs:
             echo "Release keystore found in repository."
           fi
 
-      - name: Build Release APK with Gradle
-        run: |
-          cd android_app
-          chmod +x gradlew
-          gradle wrapper || true
-          ./gradlew assembleRelease --no-daemon --stacktrace
+      - name: Build Release APK with Standalone Gradle
+        working-directory: android_app
+        run: gradle assembleRelease --no-daemon --stacktrace
 
-      - name: Copy Signed APK to Static Directory
+      - name: Deploy Signed APK to Static Directory & Push to Main
         run: |
           mkdir -p static/apk
-          cp android_app/app/build/outputs/apk/release/app-release.apk static/apk/UltraPortal.apk
+          cp android_app/app/build/outputs/apk/release/*.apk static/apk/UltraPortal.apk
           ls -la static/apk/UltraPortal.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f static/apk/UltraPortal.apk
+          git commit -m "chore: update compiled UltraPortal.apk [skip ci]" || exit 0
+          git pull --rebase origin main
+          git push origin main
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -68,15 +73,3 @@ jobs:
           name: UltraPortal-Release-APK
           path: static/apk/UltraPortal.apk
           retention-days: 30
-
-      - name: Commit & Push Compiled APK to Repository
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add static/apk/UltraPortal.apk
-          if git diff --staged --quiet; then
-            echo "Compiled APK unchanged. Nothing to commit."
-          else
-            git commit -m "chore(apk): update compiled UltraPortal.apk [skip ci]"
-            git push origin main
-          fi

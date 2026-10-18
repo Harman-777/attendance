@@ -1,46 +1,43 @@
 package in.agclms.ultraportal;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
-import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     private static final String PORTAL_URL = "https://attendance-liard-three.vercel.app";
+    private static final int DARK_BG_COLOR = 0xFF090D16;
     private WebView webView;
-    private SwipeRefreshLayout swipeRefreshLayout;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        // Customize system bars to match dark theme #090D16
+        // Customize system status bar & navigation bar to match #090D16
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.bg_dark));
-            getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.nav_bar));
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(DARK_BG_COLOR);
+            window.setNavigationBarColor(DARK_BG_COLOR);
         }
 
-        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
-        webView = findViewById(R.id.webView);
+        setContentView(R.layout.activity_main);
 
-        // Configure SwipeRefreshLayout
-        swipeRefreshLayout.setColorSchemeColors(ContextCompat.getColor(this, R.color.cyan_accent));
-        swipeRefreshLayout.setProgressBackgroundColorSchemeColor(ContextCompat.getColor(this, R.color.bg_dark));
-        swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
+        webView = findViewById(R.id.webView);
+        webView.setBackgroundColor(DARK_BG_COLOR);
 
         // Configure WebView Settings
         WebSettings settings = webView.getSettings();
@@ -55,34 +52,23 @@ public class MainActivity extends AppCompatActivity {
         settings.setDisplayZoomControls(false);
         settings.setUserAgentString(settings.getUserAgentString() + " UltraPortalApp/2.0");
 
-        // Enable Cookies & Third Party Cookies
+        // Enable Cookies
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             cookieManager.setAcceptThirdPartyCookies(webView, true);
         }
 
-        // Custom WebViewClient to stay inside app & manage refresh spinner
+        // Custom WebViewClient
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                // Stay within attendance portal domains
-                if (url.contains("attendance") || url.contains("agclms") || url.contains("vercel.app")) {
-                    return false;
-                }
                 return false;
-            }
-
-            @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                super.onPageStarted(view, url, favicon);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                swipeRefreshLayout.setRefreshing(false);
             }
         });
 
