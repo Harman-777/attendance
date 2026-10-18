@@ -58,17 +58,55 @@ function updatePwaInstallButtonState() {
     }
 }
 
-function triggerApkUpdate() {
-    const apkUrl = window.location.origin + "/download/UltraPortal.apk";
+const EXTERNAL_APK_DOWNLOAD_URL = "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk";
 
-    // 1. If running in updated native APK with Java download bridge (v2.2+)
+function showApkToast(msg) {
+    let toast = document.getElementById("apk-update-toast");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "apk-update-toast";
+        toast.style.cssText = "position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 99999999; background: #1e1b4b; color: #38bdf8; border: 2px solid #38bdf8; padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 0.9rem; box-shadow: 0 10px 30px rgba(0,0,0,0.8); text-align: center; max-width: 90%; transition: opacity 0.3s ease;";
+        document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.opacity = "1";
+    setTimeout(function () {
+        if (toast) toast.style.opacity = "0";
+    }, 6000);
+}
+
+function copyApkDownloadLink() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(EXTERNAL_APK_DOWNLOAD_URL).then(function () {
+            showApkToast("✔ Direct APK download link copied to clipboard!");
+        }).catch(function () {
+            showApkToast("Direct link: " + EXTERNAL_APK_DOWNLOAD_URL);
+        });
+    } else {
+        showApkToast("Direct link: " + EXTERNAL_APK_DOWNLOAD_URL);
+    }
+}
+
+function triggerApkUpdate() {
+    const isApk = isAndroidWebViewOrApk();
+    // In APK shells, use external GitHub URL to avoid self-recursive App Link loops into the app
+    const targetUrl = isApk ? EXTERNAL_APK_DOWNLOAD_URL : (window.location.origin + "/download/UltraPortal.apk");
+
+    // Dismiss update popup so it doesn't stay on screen or cause any loops
+    sessionStorage.setItem("apk_update_popup_dismissed", "1");
+    const popup = document.getElementById("ultra-update-popup");
+    if (popup) popup.remove();
+
+    showApkToast("⬇️ Starting download... Check notification bar or Chrome downloads.");
+
+    // 1. If running in updated native APK with Java download bridge
     if (window.AndroidApp && typeof window.AndroidApp.downloadUpdate === "function") {
-        window.AndroidApp.downloadUpdate(apkUrl);
+        window.AndroidApp.downloadUpdate(targetUrl);
         return;
     }
 
-    // 2. Set location with cache-busting timestamp so v2.0 APK DownloadListener or browser triggers download
-    window.location.href = apkUrl + "?t=" + Date.now();
+    // 2. Browser or WebView location navigation to initiate direct download
+    window.location.href = targetUrl;
 }
 
 function triggerPwaInstall() {
@@ -321,8 +359,11 @@ function checkApkUpdate() {
                             <p style="color: #94a3b8; font-size: 0.88rem; line-height: 1.45; margin-bottom: 18px;">
                                 Your installed app is <b>v${installedVer}</b>. An updated version is available with <b>5x faster login</b>, <b>automated SGPA marksheets</b>, and mobile fixes!
                             </p>
-                            <button type="button" onclick="triggerApkUpdate()" style="width: 100%; height: 48px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; font-weight: 800; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(37,99,235,0.4);">
+                            <button type="button" onclick="triggerApkUpdate()" style="width: 100%; height: 48px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; font-weight: 800; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(37,99,235,0.4);">
                                 ⚡ Update App Now (1-Click)
+                            </button>
+                            <button type="button" onclick="copyApkDownloadLink()" style="width: 100%; height: 40px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                📋 Copy Direct Download Link
                             </button>
                             <button type="button" onclick="sessionStorage.setItem('apk_update_popup_dismissed', '1'); document.getElementById('ultra-update-popup').remove();" style="background: transparent; border: none; color: #64748b; font-size: 0.84rem; cursor: pointer; text-decoration: underline;">
                                 Remind Me Later

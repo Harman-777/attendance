@@ -174,14 +174,16 @@
     </div>
 
     <script>
-        const downloadUrl = window.location.origin + "/download/UltraPortal.apk";
+        const EXTERNAL_APK_DOWNLOAD_URL = "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk";
+        const isApk = (window.AndroidApp !== undefined) || (navigator.userAgent && (navigator.userAgent.includes("UltraPortalApp") || /; wv\)/i.test(navigator.userAgent)));
+        const downloadUrl = isApk ? EXTERNAL_APK_DOWNLOAD_URL : (window.location.origin + "/download/UltraPortal.apk");
 
         function copyUpdateLink() {
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(downloadUrl).then(showFeedback);
+                navigator.clipboard.writeText(EXTERNAL_APK_DOWNLOAD_URL).then(showFeedback);
             } else {
                 const ta = document.createElement("textarea");
-                ta.value = downloadUrl;
+                ta.value = EXTERNAL_APK_DOWNLOAD_URL;
                 document.body.appendChild(ta);
                 ta.select();
                 document.execCommand("copy");
@@ -199,14 +201,14 @@
         }
 
         function shareUpdateLink() {
-            const msg = "⚡ Download Ultra Portal v{{ app_version }} APK: " + downloadUrl;
+            const msg = "⚡ Download Ultra Portal v{{ app_version }} APK: " + EXTERNAL_APK_DOWNLOAD_URL;
             if (window.AndroidApp && typeof window.AndroidApp.shareApp === "function") {
-                window.AndroidApp.shareApp(msg, downloadUrl);
+                window.AndroidApp.shareApp(msg, EXTERNAL_APK_DOWNLOAD_URL);
             } else if (navigator.share) {
                 navigator.share({
                     title: "Ultra Portal v{{ app_version }} Update",
                     text: msg,
-                    url: downloadUrl
+                    url: EXTERNAL_APK_DOWNLOAD_URL
                 }).catch(function () {});
             } else {
                 copyUpdateLink();
@@ -217,7 +219,7 @@
         document.getElementById("btn-direct-download").addEventListener("click", function (e) {
             if (window.AndroidApp && typeof window.AndroidApp.downloadUpdate === "function") {
                 e.preventDefault();
-                window.AndroidApp.downloadUpdate(downloadUrl);
+                window.AndroidApp.downloadUpdate(EXTERNAL_APK_DOWNLOAD_URL);
             }
         });
     </script>

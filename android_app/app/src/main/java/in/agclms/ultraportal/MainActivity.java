@@ -18,6 +18,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import java.net.URLEncoder;
+import android.app.DownloadManager;
+import android.os.Environment;
+import android.widget.Toast;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintManager;
@@ -164,18 +167,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void downloadUpdate(final String url) {
-            activity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        activity.startActivity(intent);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
+            startDownload(url);
         }
 
         @JavascriptInterface
@@ -284,12 +276,8 @@ public class MainActivity extends Activity {
                         }
                     }
                     if (url.contains("/download/") || url.endsWith(".apk")) {
-                        try {
-                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            view.getContext().startActivity(intent);
-                            return true;
-                        } catch (Exception ignored) {}
+                        startDownload(url);
+                        return true;
                     }
                 }
                 return false;
@@ -306,13 +294,7 @@ public class MainActivity extends Activity {
         webView.setDownloadListener(new DownloadListener() {
             @Override
             public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
-                try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                startDownload(url);
             }
         });
 
@@ -322,7 +304,61 @@ public class MainActivity extends Activity {
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
-            webView.loadUrl(PORTAL_URL);
+            Uri launchUri = getIntent() != null ? getIntent().getData() : null;
+            if (launchUri != null && launchUri.getPath() != null && (launchUri.getPath().contains("/download/") || launchUri.getPath().endsWith(".apk"))) {
+                startDownload(launchUri.toString());
+                webView.loadUrl(PORTAL_URL);
+            } else {
+                webView.loadUrl(PORTAL_URL);
+            }
+        }
+    }
+
+    public void startDownload(final String url) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                    if (dm != null) {
+                        Uri downloadUri = Uri.parse(url);
+                        DownloadManager.Request request = new DownloadManager.Request(downloadUri);
+                        request.setTitle("Ultra Portal APK Update");
+                        request.setDescription("Downloading latest UltraPortal.apk...");
+                        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "UltraPortal.apk");
+                        request.setMimeType("application/vnd.android.package-archive");
+                        dm.enqueue(request);
+
+                        Toast.makeText(MainActivity.this, "⬇️ Downloading update... Check notification bar.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    Intent chooser = Intent.createChooser(intent, "Download Ultra Portal with");
+                    chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(chooser);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (intent != null && intent.getData() != null) {
+            String path = intent.getData().getPath() != null ? intent.getData().getPath() : "";
+            if (path.contains("/download/") || path.endsWith(".apk")) {
+                startDownload(intent.getData().toString());
+            }
         }
     }
 

@@ -777,6 +777,7 @@ def api_app_version():
         "version_code": APP_VERSION_CODE,
         "release_date": "18 Oct 2026",
         "download_url": "/download/UltraPortal.apk",
+        "external_download_url": "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk",
         "changelog": [
             "Universal v2.0 WebView detection with automatic popup and native notifications",
             "Native Android NotificationChannel ('ultra_updates') for status bar notifications",
