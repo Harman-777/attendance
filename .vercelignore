@@ -1,0 +1,10 @@
+# Vercel Deployment Ignore
+# Keeps serverless function cold starts lean by excluding native Android source and temporary files
+android_app/
+.git/
+.github/
+__pycache__/
+*.pyc
+*.pyo
+.env.local
+scratch/

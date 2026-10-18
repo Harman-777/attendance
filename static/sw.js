@@ -23,8 +23,8 @@ self.addEventListener("push", function (event) {
 
     const options = {
         body: payload.body,
-        icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23111827'/><text y='68' x='18' font-size='60'>⚡</text></svg>",
-        badge: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>⚡</text></svg>",
+        icon: "/static/icons/icon-192.png",
+        badge: "/static/icons/icon-192.png",
         vibrate: [200, 100, 200],
         data: { url: payload.url || "/dashboard" },
         actions: [

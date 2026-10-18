@@ -6,7 +6,7 @@ import hashlib
 from datetime import timedelta
 from functools import wraps
 from urllib.parse import urlparse
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory, send_file
 from portal_client import PortalClient
 from notifier import (
     save_snapshot,
@@ -703,6 +703,39 @@ def logout():
     for key in ["student_id", "password", "enc_password", "portal_cookies", "just_logged_in", "save_vault"]:
         session.pop(key, None)
     return redirect(url_for("login"))
+
+
+@app.route("/.well-known/assetlinks.json")
+def assetlinks():
+    # Android Digital Asset Links standard for WebAPK / Trusted Web Activity verification
+    # Package: in.agclms.ultraportal
+    assetlinks_data = [
+        {
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+                "namespace": "android_app",
+                "package_name": "in.agclms.ultraportal",
+                "sha256_cert_fingerprints": [
+                    "FC:85:E3:2F:2F:FF:15:1C:CE:71:07:7F:D4:E5:FA:75:3E:17:03:2C:D8:38:77:87:68:68:79:23:50:AC:20:0A",
+                    "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
+                ]
+            }
+        }
+    ]
+    return jsonify(assetlinks_data)
+
+
+@app.route("/download/UltraPortal.apk")
+def download_apk():
+    apk_path = os.path.join(static_dir, "apk", "UltraPortal.apk")
+    if os.path.isfile(apk_path):
+        return send_file(
+            apk_path,
+            as_attachment=True,
+            download_name="UltraPortal.apk",
+            mimetype="application/vnd.android.package-archive"
+        )
+    return redirect("https://github.com/Harman-777/attendance/releases/latest/download/UltraPortal.apk")
 
 
 if __name__ == "__main__":

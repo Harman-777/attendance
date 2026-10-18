@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <meta name="theme-color" content="#38bdf8">
+    <meta name="theme-color" content="#090d16">
     <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="stylesheet" href="/static/app_hub.css">
     <title>Ultra Portal - Login</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -130,9 +132,95 @@
             </div>
             <button type="submit">Launch Ultra Workspace</button>
         </form>
+        <div style="margin-top: 14px;">
+            <button type="button" class="btn-app-hub-trigger" onclick="openUltraAppModal()" style="width: 100%;">
+                📲 Get Mobile App / Share with Classmates
+            </button>
+        </div>
         <div class="offline-note">
             🛡️ Offline Snapshot Protection Active: If the college portal is down, your last synced profile loads automatically.
         </div>
     </div>
+
+    <!-- Ultra Mobile App Hub & Share Modal -->
+    <div id="ultra-app-modal" class="app-modal-overlay">
+        <div class="app-modal-card">
+            <button type="button" class="app-modal-close" onclick="closeUltraAppModal()" aria-label="Close modal">✖</button>
+            <div class="app-modal-header">
+                <span class="app-modal-badge">📱 OFFICIAL APP HUB</span>
+                <h2 class="app-modal-title">⚡ Ultra Mobile Workspace</h2>
+                <p class="app-modal-subtitle">Dual-Install WebAPK, Raw Android APK &amp; Campus Share Pass</p>
+            </div>
+
+            <!-- Option 1: 1-Click Instant Install (Recommended) -->
+            <div class="app-hub-section featured">
+                <div class="section-head">
+                    <div class="section-title">⚡ 1-Click Instant Install</div>
+                    <span class="section-badge-green">RECOMMENDED</span>
+                </div>
+                <p class="section-desc">Zero security warnings • Direct Chrome/Android WebAPK • Instant home screen launcher &amp; auto-updates.</p>
+                <button type="button" id="btn-pwa-install" class="btn-hub-action btn-hub-primary" onclick="triggerPwaInstall()">
+                    ⚡ 1-Click Install WebAPK
+                </button>
+                <div id="ios-install-guide" class="ios-instruction-box">
+                    <b>🍏 iOS / Safari Installation:</b><br>
+                    1. Tap the <b>Share</b> button (square with arrow) at the bottom.<br>
+                    2. Scroll down and tap <b>"Add to Home Screen"</b> (+).
+                </div>
+            </div>
+
+            <!-- Option 2: Download Raw Android APK -->
+            <div class="app-hub-section">
+                <div class="section-head">
+                    <div class="section-title">📦 Download Raw Android APK</div>
+                    <span class="section-badge-purple">NATIVE APK</span>
+                </div>
+                <p class="section-desc">Direct signed Android APK (~2.5 MB). Full offline shell &amp; hardware back navigation.</p>
+                <a href="/download/UltraPortal.apk" class="btn-hub-action btn-hub-purple" download>
+                    ⬇️ Download UltraPortal.apk
+                </a>
+                <p style="font-size: 0.72rem; color: #94a3b8; margin-top: 8px; line-height: 1.4;">
+                    💡 <i>If prompted by Android/Chrome ("File might be harmful"), tap <b>"Download anyway"</b> and <b>"Install"</b>. Or use Option 1 above for instant zero-warning install.</i>
+                </p>
+            </div>
+
+            <!-- Option 3: Viral Share with Classmates -->
+            <div class="app-hub-section">
+                <div class="section-head">
+                    <div class="section-title">🚀 Share with Classmates</div>
+                </div>
+                <p class="section-desc">Help friends track live attendance, calculate safe bunks, and beat 75% short-attendance.</p>
+                <div class="share-grid">
+                    <button type="button" class="btn-share-item whatsapp" onclick="shareOnWhatsApp()">
+                        <span style="font-size: 1.2rem;">💬</span>
+                        <span>WhatsApp</span>
+                    </button>
+                    <button type="button" class="btn-share-item" onclick="shareNativeSheet()">
+                        <span style="font-size: 1.2rem;">📤</span>
+                        <span>Share Sheet</span>
+                    </button>
+                    <button type="button" id="btn-copy-share-link" class="btn-share-item" onclick="copyPortalShareLink()">
+                        <span style="font-size: 1.2rem;">🔗</span>
+                        <span>Copy Link</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Option 4: Classroom QR Code Pass -->
+            <div class="app-hub-section" style="margin-bottom: 0;">
+                <div class="section-head">
+                    <div class="section-title">📷 Classroom QR Code Pass</div>
+                </div>
+                <p class="section-desc">Let friends scan this QR code directly from your phone or laptop screen.</p>
+                <div class="qr-container-box">
+                    <div class="qr-code-frame" id="app-qr-code"></div>
+                    <div class="qr-label">Scan to open Ultra Portal instantly</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/qrcode.min.js"></script>
+    <script src="/static/app_hub.js"></script>
 </body>
 </html>
