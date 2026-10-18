@@ -1,7 +1,11 @@
 import os
 import hmac
 import html
+import time
+import hashlib
+from datetime import timedelta
 from functools import wraps
+from urllib.parse import urlparse
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
 from portal_client import PortalClient
 from notifier import (
@@ -19,7 +23,9 @@ from db_client import (
     get_user_record,
     save_push_or_email_prefs,
     set_vault_password,
+    encrypt_password,
     decrypt_password,
+    is_valid_student_id,
     submit_feedback,
     get_user_feedback,
     get_admin_dashboard_data,
@@ -45,13 +51,18 @@ possible_static_dirs = [
 ]
 static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path.join(base_dir, "static"))
 
-import time
-from datetime import timedelta
-
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
-app.secret_key = os.environ.get("SECRET_KEY", "ultra_attendance_secret_key_pro")
 
-# 1. Harden Session Cookies against XSS & CSRF
+# 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
+secret_key = os.environ.get("SECRET_KEY", "").strip()
+if not secret_key:
+    enc_k = os.environ.get("ENCRYPTION_KEY", "").strip()
+    sup_k = os.environ.get("SUPABASE_KEY", "").strip()
+    seed = (enc_k + sup_k).encode("utf-8")
+    secret_key = hashlib.sha256(seed).hexdigest()
+app.secret_key = secret_key
+
+# 2. Harden Session Cookies against XSS, Hijacking & CSRF
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
@@ -59,50 +70,113 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=timedelta(hours=12)
 )
 
-# 2. Brute-Force Rate Limiter (Tracks failed logins per IP)
-_FAILED_LOGINS = {}  # { ip: [timestamp1, timestamp2, ...] }
+
+# 3. Encrypted Session Password Helpers (Prevents plaintext passwords in base64 cookies)
+def set_session_password(plain_password: str):
+    if plain_password:
+        session["enc_password"] = encrypt_password(plain_password)
+    else:
+        session.pop("enc_password", None)
+    session.pop("password", None)
 
 
-def is_ip_rate_limited(ip: str, max_attempts: int = 5, window_sec: int = 600) -> bool:
+def get_session_password() -> str:
+    enc = session.get("enc_password")
+    if enc:
+        plain = decrypt_password(enc)
+        if plain:
+            return plain
+    return session.get("password", "") or ""
+
+
+# 4. Unspoofable Client IP Extraction on Vercel
+def get_trusted_client_ip() -> str:
+    # x-vercel-forwarded-for is set by Vercel's edge network and cannot be spoofed by incoming clients
+    vercel_ip = request.headers.get("x-vercel-forwarded-for")
+    if vercel_ip:
+        return vercel_ip.split(",")[0].strip()
+    return (request.remote_addr or "127.0.0.1").split(",")[0].strip()
+
+
+# 5. Brute-Force Rate Limiter (Tracks failed logins per IP with optional scope)
+_FAILED_LOGINS = {}  # { key: [timestamp1, timestamp2, ...] }
+
+
+def _rate_limit_key(ip: str, scope: str = "") -> str:
+    return f"{scope}:{ip}" if scope else ip
+
+
+def is_ip_rate_limited(ip: str, max_attempts: int = 5, window_sec: int = 600, scope: str = "") -> bool:
+    key = _rate_limit_key(ip, scope)
     now = time.time()
-    attempts = [t for t in _FAILED_LOGINS.get(ip, []) if now - t < window_sec]
-    _FAILED_LOGINS[ip] = attempts
+    attempts = [t for t in _FAILED_LOGINS.get(key, []) if now - t < window_sec]
+    _FAILED_LOGINS[key] = attempts
     return len(attempts) >= max_attempts
 
 
-def record_failed_login(ip: str):
+def record_failed_login(ip: str, scope: str = ""):
+    key = _rate_limit_key(ip, scope)
     now = time.time()
-    _FAILED_LOGINS.setdefault(ip, []).append(now)
+    _FAILED_LOGINS.setdefault(key, []).append(now)
 
 
-def clear_failed_logins(ip: str):
-    _FAILED_LOGINS.pop(ip, None)
+def clear_failed_logins(ip: str, scope: str = ""):
+    if scope:
+        _FAILED_LOGINS.pop(_rate_limit_key(ip, scope), None)
+    else:
+        _FAILED_LOGINS.pop(ip, None)
+        for s in ["admin", "student"]:
+            _FAILED_LOGINS.pop(f"{s}:{ip}", None)
 
 
-# 3. Inject Production Security Headers on Every Response
+# 6. Global CSRF Origin Protection on POST Requests
+@app.before_request
+def csrf_origin_protect():
+    if request.method == "POST":
+        origin = request.headers.get("Origin") or request.headers.get("Referer")
+        if origin:
+            parsed = urlparse(origin)
+            if parsed.netloc and parsed.netloc != request.host:
+                return jsonify({"ok": False, "message": "CSRF Origin mismatch blocked."}), 403
+
+
+# 7. Inject Production Security Headers on Every Response
 @app.after_request
 def apply_security_headers(response):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
 
 @app.route("/", methods=["GET", "POST"])
 def login():
     error = None
+    client_ip = get_trusted_client_ip()
+
     if request.method == "POST":
+        if is_ip_rate_limited(client_ip, max_attempts=10, window_sec=600, scope="student"):
+            return render_template(
+                "login.html",
+                error="Too many failed attempts. Your IP is locked out for 10 minutes."
+            ), 429
+
         student_id = request.form.get("student_id", "").strip()
         password = request.form.get("password", "").strip()
         save_vault = request.form.get("save_vault", "1") != "0"
         session["save_vault"] = save_vault
 
+        if not is_valid_student_id(student_id):
+            return render_template("login.html", error="Invalid Student ID format.")
+
         # 1. Fast Path (0.4s Instant Login): If user enabled Cloud Vault in Supabase, verify instantly!
         db_user = get_user_record(student_id)
         if db_user and db_user.get("encrypted_password") and db_user.get("cached_profile"):
             if decrypt_password(db_user["encrypted_password"]) == password:
+                clear_failed_logins(client_ip, scope="student")
                 session["student_id"] = student_id
-                session["password"] = password
+                set_session_password(password)
                 session["just_logged_in"] = True
                 return redirect(url_for("dashboard"))
 
@@ -111,16 +185,19 @@ def login():
         success, err = client.authenticate()
 
         if not success:
+            record_failed_login(client_ip, scope="student")
             cached = (db_user.get("cached_profile") if db_user else None) or load_snapshot(student_id)
             if cached and "Portal unreachable" in (err or ""):
+                clear_failed_logins(client_ip, scope="student")
                 session["student_id"] = student_id
-                session["password"] = password
+                set_session_password(password)
                 session["just_logged_in"] = True
                 return redirect(url_for("dashboard"))
             error = err
         else:
+            clear_failed_logins(client_ip, scope="student")
             session["student_id"] = student_id
-            session["password"] = password
+            set_session_password(password)
             session["portal_cookies"] = client.get_cookies()
             session["just_logged_in"] = True
             return redirect(url_for("dashboard"))
@@ -131,7 +208,7 @@ def login():
 @app.route("/dashboard")
 def dashboard():
     student_id = session.get("student_id")
-    password = session.get("password")
+    password = get_session_password()
     if not student_id or not password:
         return redirect(url_for("login"))
 
@@ -173,7 +250,7 @@ def dashboard():
 
     if is_login_event:
         ua = request.headers.get("User-Agent", "")
-        ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "127.0.0.1").split(",")[0].strip()
+        ip = get_trusted_client_ip()
         record_login_event(student_id, (data.get("student_name") if data else "Student") or "Student", ua, ip)
 
     total_present = sum(s["present"] for s in data["subjects"])
@@ -206,7 +283,7 @@ def dashboard():
 @app.route("/api/background-sync", methods=["POST"])
 def api_background_sync():
     student_id = session.get("student_id")
-    password = session.get("password")
+    password = get_session_password()
     if not student_id or not password:
         return jsonify({"ok": False, "message": "Not logged in."}), 401
 
@@ -242,7 +319,7 @@ def api_background_sync():
 @app.route("/api/toggle-vault", methods=["POST"])
 def api_toggle_vault():
     student_id = session.get("student_id")
-    password = session.get("password")
+    password = get_session_password()
     if not student_id or not password:
         return jsonify({"ok": False, "message": "Not logged in."}), 401
 
@@ -259,7 +336,7 @@ def api_toggle_vault():
 @app.route("/api/change-password", methods=["POST"])
 def api_change_password():
     student_id = session.get("student_id")
-    password = session.get("password")
+    password = get_session_password()
     if not student_id or not password:
         return jsonify({"ok": False, "message": "Not logged in."}), 401
 
@@ -274,7 +351,7 @@ def api_change_password():
     client = PortalClient(student_id, password, cookies=session.get("portal_cookies"))
     ok, msg = client.change_password(old_pw, new_pw, conf_pw)
     if ok:
-        session["password"] = new_pw
+        set_session_password(new_pw)
     return jsonify({"ok": ok, "message": msg})
 
 
@@ -397,10 +474,10 @@ def admin_login():
         return redirect(url_for("admin_dashboard"))
 
     error = None
-    client_ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "unknown").split(",")[0].strip()
+    client_ip = get_trusted_client_ip()
 
     if request.method == "POST":
-        if is_ip_rate_limited(client_ip, max_attempts=5, window_sec=600):
+        if is_ip_rate_limited(client_ip, max_attempts=5, window_sec=600, scope="admin"):
             return render_template(
                 "admin_login.html",
                 error="Too many failed attempts. Your IP is locked out for 10 minutes."
@@ -412,12 +489,13 @@ def admin_login():
         if not ADMIN_PASSWORD:
             error = "ADMIN_PASSWORD is not set in environment variables."
         elif hmac.compare_digest(username, ADMIN_USERNAME) and hmac.compare_digest(password, ADMIN_PASSWORD):
-            clear_failed_logins(client_ip)
+            clear_failed_logins(client_ip, scope="admin")
             session.permanent = True
             session["is_ultra_admin"] = True
             return redirect(url_for("admin_dashboard"))
         else:
-            record_failed_login(client_ip)
+            record_failed_login(client_ip, scope="admin")
+            time.sleep(1.2)  # Throttle automated scripts across serverless cold starts
             error = "Invalid Administrator Credentials."
 
     return render_template("admin_login.html", error=error)
@@ -449,7 +527,15 @@ def admin_dashboard():
 @app.route("/admin/view/<student_id>")
 @admin_required
 def admin_view_student(student_id):
-    student_id = student_id.strip()
+    student_id = (student_id or "").strip()
+    if not is_valid_student_id(student_id):
+        ctx = get_admin_dashboard_context()
+        return render_template(
+            "admin.html",
+            error=f"Invalid student ID format: {html.escape(student_id)}",
+            **ctx
+        )
+
     db_user = get_user_record(student_id)
 
     # Optional: Live force sync if admin requests fresh scrape via ?live=1
@@ -588,6 +674,9 @@ def api_admin_user_action():
     student_id = (req.get("student_id") or "").strip()
     action = (req.get("action") or "").strip()
 
+    if not is_valid_student_id(student_id):
+        return jsonify({"ok": False, "message": "Invalid student ID."}), 400
+
     if action == "force_sync":
         u = get_user_record(student_id)
         if not u or not u.get("encrypted_password"):
@@ -611,7 +700,7 @@ def api_admin_user_action():
 
 @app.route("/logout")
 def logout():
-    for key in ["student_id", "password", "portal_cookies", "just_logged_in", "save_vault"]:
+    for key in ["student_id", "password", "enc_password", "portal_cookies", "just_logged_in", "save_vault"]:
         session.pop(key, None)
     return redirect(url_for("login"))
 

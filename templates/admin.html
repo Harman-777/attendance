@@ -416,13 +416,13 @@
                     <td style="color:#94a3b8; font-size:0.78rem;">{{ (u.last_synced_at or '')[:19].replace('T', ' ') }}</td>
                     <td style="display:flex; gap:6px; flex-wrap:wrap;">
                         {% if u.encrypted_password or (u.cached_profile and u.cached_profile.subjects) %}
-                        <a href="/admin/view/{{ u.student_id }}" target="_blank" class="btn btn-purple" style="font-size:0.78rem; padding:6px 10px;" title="Inspect live student attendance in Admin View">👁️ View Attendance</a>
+                        <a href="/admin/view/{{ u.student_id|urlencode }}" target="_blank" class="btn btn-purple" style="font-size:0.78rem; padding:6px 10px;" title="Inspect live student attendance in Admin View">👁️ View Attendance</a>
                         {% endif %}
                         {% if u.encrypted_password %}
-                        <button class="btn btn-primary" title="Scrape live attendance from college portal using Vault password" onclick="userAction('{{ u.student_id }}', 'force_sync')">🔄 Sync Now</button>
-                        <button class="btn btn-outline" title="Clear saved encrypted password from Supabase" onclick="userAction('{{ u.student_id }}', 'wipe_vault')">🗑️ Wipe Vault</button>
+                        <button class="btn btn-primary" title="Scrape live attendance from college portal using Vault password" onclick="userAction('{{ u.student_id|e }}', 'force_sync')">🔄 Sync Now</button>
+                        <button class="btn btn-outline" title="Clear saved encrypted password from Supabase" onclick="userAction('{{ u.student_id|e }}', 'wipe_vault')">🗑️ Wipe Vault</button>
                         {% endif %}
-                        <button class="btn btn-danger" onclick="userAction('{{ u.student_id }}', 'delete_user')">✖ Delete</button>
+                        <button class="btn btn-danger" onclick="userAction('{{ u.student_id|e }}', 'delete_user')">✖ Delete</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -474,11 +474,13 @@ function refreshAdminDashboard(btn) {
     window.location.href = "/admin?refreshed=" + Date.now();
 }
 
+const VALID_STUDENT_ID_REGEX = /^[A-Za-z0-9_-]{1,25}$/;
+
 // Open live student dashboard in Admin View
 function openAdminView() {
     const sel = document.getElementById("admin-view-student");
     const id = sel ? sel.value.trim() : "";
-    if (!id) {
+    if (!id || !VALID_STUDENT_ID_REGEX.test(id)) {
         if (sel) {
             sel.focus();
             sel.style.borderColor = "#ef4444";
@@ -601,7 +603,7 @@ function onStudentSearchInput(query) {
             : '<span class="pill pill-yellow" style="font-size:0.68rem; padding: 2px 6px;">⏳ Unsynced</span>';
 
         html += `
-            <div class="search-item" data-index="${idx}" data-id="${escapeHtml(st.id)}" onclick="selectStudentMatch('${escapeHtml(st.id)}')">
+            <div class="search-item" data-index="${idx}" data-id="${escapeHtml(st.id)}">
                 <div style="display: flex; flex-direction: column; gap: 2px; text-align: left; overflow: hidden;">
                     <div style="color: #f8fafc; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                         👤 ${highlightedName}
@@ -624,6 +626,10 @@ function onStudentSearchInput(query) {
 }
 
 function selectStudentMatch(studentId) {
+    if (!studentId || !VALID_STUDENT_ID_REGEX.test(studentId)) {
+        console.warn("Invalid student ID format in selection:", studentId);
+        return;
+    }
     const st = registeredStudents.find(s => s.id === studentId);
     if (!st) return;
 
@@ -729,6 +735,17 @@ document.addEventListener("click", function(e) {
     }
 });
 
+// Delegated click listener for search items (avoids inline event execution quirks)
+const searchDropdownEl = document.getElementById("student-search-dropdown");
+if (searchDropdownEl) {
+    searchDropdownEl.addEventListener("click", function(e) {
+        const item = e.target.closest(".search-item");
+        if (item && item.dataset && item.dataset.id) {
+            selectStudentMatch(item.dataset.id);
+        }
+    });
+}
+
 // Format ISO timestamps into readable Day, Date & Time in IST (e.g., "Sat, 17 Oct • 11:45 PM")
 document.querySelectorAll(".fb-formatted-time, .log-formatted-time").forEach(function(el) {
     const raw = el.getAttribute("data-time") || el.textContent.trim();
@@ -826,6 +843,10 @@ function broadcastPush() {
 }
 
 function userAction(studentId, action) {
+    if (!studentId || !VALID_STUDENT_ID_REGEX.test(studentId)) {
+        alert("Invalid Student ID format.");
+        return;
+    }
     if (action === "delete_user" && !confirm("Delete user " + studentId + " permanently?")) return;
     fetch("/api/admin/user-action", {
         method: "POST",

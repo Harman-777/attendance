@@ -1,4 +1,5 @@
 import os
+import re
 import base64
 import hashlib
 from datetime import datetime, timezone
@@ -12,6 +13,14 @@ load_dotenv()
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().strip('"').strip("'").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "").strip().strip('"').strip("'")
 ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", "").strip().strip('"').strip("'")
+
+VALID_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,25}$")
+
+
+def is_valid_student_id(student_id: str) -> bool:
+    if not student_id or not isinstance(student_id, str):
+        return False
+    return bool(VALID_ID_RE.match(student_id.strip()))
 
 
 def _get_fernet():
@@ -60,11 +69,12 @@ def is_db_configured() -> bool:
 
 
 def get_user_record(student_id: str):
-    if not is_db_configured() or not student_id:
+    if not is_db_configured() or not is_valid_student_id(student_id):
         return None
     try:
-        url = f"{SUPABASE_URL}/rest/v1/portal_users?student_id=eq.{student_id}&select=*"
-        res = requests.get(url, headers=_headers(), timeout=6)
+        url = f"{SUPABASE_URL}/rest/v1/portal_users"
+        params = {"student_id": f"eq.{student_id}", "select": "*"}
+        res = requests.get(url, headers=_headers(), params=params, timeout=6)
         if res.status_code == 200:
             rows = res.json()
             return rows[0] if rows else None
@@ -78,8 +88,8 @@ def set_vault_password(student_id: str, plain_password: str = None, enable: bool
     Called when the user clicks the Encrypt Password button in the UI.
     Encrypts and saves the password to Supabase, or wipes it back to NULL if disabled.
     """
-    if not is_db_configured() or not student_id:
-        return False, "Supabase is not configured.", ""
+    if not is_db_configured() or not is_valid_student_id(student_id):
+        return False, "Invalid student ID or database not configured.", ""
 
     enc_val = encrypt_password(plain_password) if (enable and plain_password) else None
     update_data = {
@@ -88,8 +98,9 @@ def set_vault_password(student_id: str, plain_password: str = None, enable: bool
     }
 
     try:
-        url = f"{SUPABASE_URL}/rest/v1/portal_users?student_id=eq.{student_id}"
-        res = requests.patch(url, headers=_headers("return=minimal"), json=update_data, timeout=8)
+        url = f"{SUPABASE_URL}/rest/v1/portal_users"
+        params = {"student_id": f"eq.{student_id}"}
+        res = requests.patch(url, headers=_headers("return=minimal"), params=params, json=update_data, timeout=8)
         if res.status_code in (200, 204):
             if enc_val:
                 preview = enc_val[:16] + "..." + enc_val[-6:]
@@ -106,7 +117,7 @@ def sync_user_to_supabase(student_id: str, plain_password: str, data: dict, is_l
     Encrypts password by default into Supabase Cloud Password Vault so background auto-sync
     and Admin sync work seamlessly.
     """
-    if not is_db_configured() or not data:
+    if not is_db_configured() or not data or not is_valid_student_id(student_id):
         return []
 
     existing = get_user_record(student_id)
@@ -197,7 +208,7 @@ def record_login_event(student_id: str, student_name: str, user_agent: str, ip_a
     Records a live login event into login_logs AND updates portal_users last_login_at and login_count.
     Ensures the Admin Dashboard accurately reflects real-time logins and totals.
     """
-    if not is_db_configured() or not student_id:
+    if not is_db_configured() or not is_valid_student_id(student_id):
         return
 
     # 1. Insert audit log record
@@ -216,14 +227,15 @@ def record_login_event(student_id: str, student_name: str, user_agent: str, ip_a
         if student_name and student_name != "Student":
             patch_payload["student_name"] = student_name
 
-        url = f"{SUPABASE_URL}/rest/v1/portal_users?student_id=eq.{student_id}"
-        requests.patch(url, headers=_headers("return=minimal"), json=patch_payload, timeout=6)
+        url = f"{SUPABASE_URL}/rest/v1/portal_users"
+        params = {"student_id": f"eq.{student_id}"}
+        requests.patch(url, headers=_headers("return=minimal"), params=params, json=patch_payload, timeout=6)
     except Exception as e:
         print("Error updating portal_users login timestamp/count:", e)
 
 
 def save_push_or_email_prefs(student_id: str, email: str = None, push_sub: dict = None, auto_sync: bool = True):
-    if not is_db_configured() or not student_id:
+    if not is_db_configured() or not is_valid_student_id(student_id):
         return False
     update_data = {"auto_sync_enabled": auto_sync}
     if email is not None:
@@ -232,8 +244,9 @@ def save_push_or_email_prefs(student_id: str, email: str = None, push_sub: dict 
         update_data["push_subscription"] = push_sub
 
     try:
-        url = f"{SUPABASE_URL}/rest/v1/portal_users?student_id=eq.{student_id}"
-        res = requests.patch(url, headers=_headers("return=minimal"), json=update_data, timeout=8)
+        url = f"{SUPABASE_URL}/rest/v1/portal_users"
+        params = {"student_id": f"eq.{student_id}"}
+        res = requests.patch(url, headers=_headers("return=minimal"), params=params, json=update_data, timeout=8)
         return res.status_code in (200, 204)
     except Exception as e:
         print("Supabase save_push_or_email_prefs error:", e)
@@ -244,8 +257,9 @@ def get_all_auto_sync_users():
     if not is_db_configured():
         return []
     try:
-        url = f"{SUPABASE_URL}/rest/v1/portal_users?auto_sync_enabled=eq.true&select=*"
-        res = requests.get(url, headers=_headers(), timeout=12)
+        url = f"{SUPABASE_URL}/rest/v1/portal_users"
+        params = {"auto_sync_enabled": "eq.true", "select": "*"}
+        res = requests.get(url, headers=_headers(), params=params, timeout=12)
         if res.status_code == 200:
             return res.json()
     except Exception as e:
@@ -254,8 +268,8 @@ def get_all_auto_sync_users():
 
 def submit_feedback(student_id: str, student_name: str, category: str, rating: int, message: str):
     """Saves a user's feedback or suggestion into app_feedback."""
-    if not is_db_configured() or not student_id or not message:
-        return False, "Database not configured or empty message."
+    if not is_db_configured() or not is_valid_student_id(student_id) or not message:
+        return False, "Database not configured or invalid student ID/empty message."
 
     payload = {
         "student_id": str(student_id),
@@ -277,15 +291,18 @@ def submit_feedback(student_id: str, student_name: str, category: str, rating: i
 
 def get_user_feedback(student_id: str):
     """Fetches a specific user's submitted feedback and any developer replies."""
-    if not is_db_configured() or not student_id:
+    if not is_db_configured() or not is_valid_student_id(student_id):
         return []
     try:
-        url = (
-            f"{SUPABASE_URL}/rest/v1/app_feedback"
-            f"?student_id=eq.{student_id}&category=neq.ADMIN_BROADCAST"
-            f"&select=*&order=created_at.desc&limit=15"
-        )
-        res = requests.get(url, headers=_headers(), timeout=6)
+        url = f"{SUPABASE_URL}/rest/v1/app_feedback"
+        params = {
+            "student_id": f"eq.{student_id}",
+            "category": "neq.ADMIN_BROADCAST",
+            "select": "*",
+            "order": "created_at.desc",
+            "limit": "15"
+        }
+        res = requests.get(url, headers=_headers(), params=params, timeout=6)
         if res.status_code == 200:
             return res.json()
     except Exception as e:
@@ -321,15 +338,18 @@ def create_admin_broadcast(target_id: str, title: str, body: str):
 
 def get_user_announcements(student_id: str):
     """Fetches recent Admin Broadcasts and Developer Replies for the student's top banner."""
-    if not is_db_configured() or not student_id:
+    if not is_db_configured() or not is_valid_student_id(student_id):
         return []
     try:
-        url = (
-            f"{SUPABASE_URL}/rest/v1/app_feedback"
-            f"?student_id=eq.{student_id}&category=eq.ADMIN_BROADCAST"
-            f"&select=*&order=created_at.desc&limit=3"
-        )
-        res = requests.get(url, headers=_headers(), timeout=6)
+        url = f"{SUPABASE_URL}/rest/v1/app_feedback"
+        params = {
+            "student_id": f"eq.{student_id}",
+            "category": "eq.ADMIN_BROADCAST",
+            "select": "*",
+            "order": "created_at.desc",
+            "limit": "3"
+        }
+        res = requests.get(url, headers=_headers(), params=params, timeout=6)
         if res.status_code == 200:
             return res.json()
     except Exception:
@@ -341,8 +361,9 @@ def admin_delete_feedback(feedback_id: int):
     if not is_db_configured():
         return False
     try:
-        url = f"{SUPABASE_URL}/rest/v1/app_feedback?id=eq.{int(feedback_id)}"
-        res = requests.delete(url, headers=_headers("return=minimal"), timeout=6)
+        url = f"{SUPABASE_URL}/rest/v1/app_feedback"
+        params = {"id": f"eq.{int(feedback_id)}"}
+        res = requests.delete(url, headers=_headers("return=minimal"), params=params, timeout=6)
         return res.status_code in (200, 204)
     except Exception:
         return False
@@ -356,24 +377,27 @@ def get_admin_dashboard_data():
 
     try:
         u_res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/portal_users?select=*&order=last_login_at.desc",
+            f"{SUPABASE_URL}/rest/v1/portal_users",
             headers=_headers(),
+            params={"select": "*", "order": "last_login_at.desc"},
             timeout=8
         )
         if u_res.status_code == 200:
             data["users"] = u_res.json()
 
         f_res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/app_feedback?select=*&order=created_at.desc",
+            f"{SUPABASE_URL}/rest/v1/app_feedback",
             headers=_headers(),
+            params={"select": "*", "order": "created_at.desc"},
             timeout=8
         )
         if f_res.status_code == 200:
             data["feedback"] = f_res.json()
 
         l_res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/login_logs?select=*&order=logged_in_at.desc&limit=100",
+            f"{SUPABASE_URL}/rest/v1/login_logs",
             headers=_headers(),
+            params={"select": "*", "order": "logged_in_at.desc", "limit": "100"},
             timeout=8
         )
         if l_res.status_code == 200:
@@ -389,12 +413,13 @@ def admin_update_feedback(feedback_id: int, status: str, admin_reply: str):
     if not is_db_configured():
         return False, None
     try:
-        url = f"{SUPABASE_URL}/rest/v1/app_feedback?id=eq.{int(feedback_id)}"
+        url = f"{SUPABASE_URL}/rest/v1/app_feedback"
+        params = {"id": f"eq.{int(feedback_id)}"}
         payload = {
             "status": status,
             "admin_reply": admin_reply.strip() if admin_reply else None
         }
-        res = requests.patch(url, headers=_headers("return=representation"), json=payload, timeout=8)
+        res = requests.patch(url, headers=_headers("return=representation"), params=params, json=payload, timeout=8)
         if res.status_code in (200, 204):
             rows = res.json() if res.text else []
             return True, (rows[0] if rows else None)
@@ -405,15 +430,17 @@ def admin_update_feedback(feedback_id: int, status: str, admin_reply: str):
 
 def admin_manage_user(student_id: str, action: str):
     """Allows the Admin to wipe a user's vault, toggle auto-sync, or delete a user row."""
-    if not is_db_configured() or not student_id:
-        return False, "Invalid request."
+    if not is_db_configured() or not is_valid_student_id(student_id):
+        return False, "Invalid student ID."
 
-    url = f"{SUPABASE_URL}/rest/v1/portal_users?student_id=eq.{student_id}"
+    url = f"{SUPABASE_URL}/rest/v1/portal_users"
+    params = {"student_id": f"eq.{student_id}"}
     try:
         if action == "wipe_vault":
             res = requests.patch(
                 url,
                 headers=_headers("return=minimal"),
+                params=params,
                 json={"encrypted_password": None, "auto_sync_enabled": False},
                 timeout=8
             )
@@ -424,12 +451,13 @@ def admin_manage_user(student_id: str, action: str):
             res = requests.patch(
                 url,
                 headers=_headers("return=minimal"),
+                params=params,
                 json={"auto_sync_enabled": new_state},
                 timeout=8
             )
             return res.status_code in (200, 204), f"Auto-sync set to {new_state} for {student_id}."
         elif action == "delete_user":
-            res = requests.delete(url, headers=_headers("return=minimal"), timeout=8)
+            res = requests.delete(url, headers=_headers("return=minimal"), params=params, timeout=8)
             return res.status_code in (200, 204), f"Deleted user {student_id} from Supabase."
     except Exception as e:
         return False, str(e)
