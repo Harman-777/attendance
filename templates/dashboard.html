@@ -24,7 +24,7 @@
         <div class="mobile-brand">
             <span class="mobile-brand-icon">⚡</span>
             <div class="mobile-brand-text">
-                <div class="mobile-app-title">Ultra Portal <span class="app-badge">{{ app_version }}</span></div>
+                <div class="mobile-app-title">Ultra Portal <span class="app-badge">v{{ app_version }}</span></div>
                 <div class="mobile-student-sub">{{ data.student_name }} • {{ data.student_id }}</div>
             </div>
         </div>
@@ -39,7 +39,7 @@
     <aside id="sidebar-nav">
         <div class="brand-box">
             <h2>⚡ Ultra Portal</h2>
-            <span class="app-badge">PRO {{ app_version }}</span>
+            <span class="app-badge">PRO v{{ app_version }}</span>
         </div>
 
         <nav class="nav-container">
@@ -923,7 +923,7 @@
             <div class="app-hub-section">
                 <div class="section-head">
                     <div class="section-title">📦 Download Raw Android APK <span id="apk-version-badge" style="font-size: 0.75rem; margin-left: 6px; font-weight: 600;"></span></div>
-                    <span class="section-badge-purple">NATIVE APK ({{ app_version }})</span>
+                    <span class="section-badge-purple">NATIVE APK (v{{ app_version }})</span>
                 </div>
                 <p class="section-desc">Direct signed Android APK (~2.5 MB). Full offline shell &amp; hardware back navigation.</p>
                 <a href="/download/UltraPortal.apk" class="btn-hub-action btn-hub-purple" download onclick="triggerApkUpdate();">

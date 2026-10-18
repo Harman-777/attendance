@@ -53,8 +53,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "v2.2"
-APP_VERSION_CODE = 4
+APP_VERSION = "2.3"
+APP_VERSION_CODE = 5
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -773,16 +773,16 @@ def download_apk():
 @app.route("/api/app-version")
 def api_app_version():
     return jsonify({
-        "latest_version": APP_VERSION.lstrip("v"),
+        "latest_version": APP_VERSION,
         "version_code": APP_VERSION_CODE,
         "release_date": "18 Oct 2026",
         "download_url": "/download/UltraPortal.apk",
         "changelog": [
-            "Native Android DownloadListener & 1-Click Update system",
-            "Universal PWA WebAPK installability with service worker fetch handler",
-            "Direct WhatsApp mobile app integration (bypasses browser)",
-            "Native Android Share Sheet drawer with direct APK download link",
-            "Full 15-field official student profile sync for all students"
+            "Universal v2.0 WebView detection with automatic popup and native notifications",
+            "Native Android NotificationChannel ('ultra_updates') for status bar notifications",
+            "High-speed pre-scrape instant dashboard rendering (<2.5s login)",
+            "Responsive calendar subject filter box and clean mobile navigation",
+            "Seamless background sync for semester exam marks and SGPA trends"
         ]
     })
 

@@ -8,6 +8,12 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -39,12 +45,58 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getAppVersion() {
-            return "2.2";
+            return "2.3";
         }
 
         @JavascriptInterface
         public int getAppVersionCode() {
-            return 4;
+            return 5;
+        }
+
+        @JavascriptInterface
+        public void showNativeNotification(final String title, final String body) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        SharedPreferences prefs = activity.getSharedPreferences("ultra_prefs", Context.MODE_PRIVATE);
+                        String notifiedKey = "notified_" + title;
+                        if (prefs.getBoolean(notifiedKey, false)) {
+                            return;
+                        }
+
+                        NotificationManager notificationManager = (NotificationManager) activity.getSystemService(Context.NOTIFICATION_SERVICE);
+                        if (notificationManager == null) return;
+
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(PORTAL_URL + "/download/UltraPortal.apk"));
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        PendingIntent pendingIntent = PendingIntent.getActivity(
+                            activity,
+                            0,
+                            intent,
+                            PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+                        );
+
+                        Notification.Builder builder;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            builder = new Notification.Builder(activity, "ultra_updates");
+                        } else {
+                            builder = new Notification.Builder(activity);
+                        }
+
+                        builder.setSmallIcon(R.mipmap.ic_launcher)
+                               .setContentTitle(title)
+                               .setContentText(body)
+                               .setAutoCancel(true)
+                               .setContentIntent(pendingIntent);
+
+                        notificationManager.notify(1001, builder.build());
+                        prefs.edit().putBoolean(notifiedKey, true).apply();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
         }
 
         @JavascriptInterface
@@ -153,6 +205,27 @@ public class MainActivity extends Activity {
             window.setNavigationBarColor(DARK_BG_COLOR);
         }
 
+        // Create high-importance NotificationChannel for Ultra Portal Updates (Android 8.0+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                "ultra_updates",
+                "Ultra Portal Updates",
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Notifications about new Ultra Portal updates and features");
+            NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+
+        // On Android 13+ (API 33+), request POST_NOTIFICATIONS permission if not granted
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 101);
+            }
+        }
+
         setContentView(R.layout.activity_main);
 
         webView = findViewById(R.id.webView);
@@ -169,7 +242,7 @@ public class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " UltraPortalApp/2.2");
+        settings.setUserAgentString(settings.getUserAgentString() + " UltraPortalApp/2.3");
 
         // Enable Cookies
         CookieManager cookieManager = CookieManager.getInstance();

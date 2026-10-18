@@ -67,16 +67,8 @@ function triggerApkUpdate() {
         return;
     }
 
-    // 2. If running in older APK shell (v2.0) that lacks native download bridge
-    // Safely navigate to the dedicated /update Center page inside the WebView.
-    const isApk = (window.AndroidApp !== undefined) || (navigator.userAgent && navigator.userAgent.includes("UltraPortalApp"));
-    if (isApk) {
-        window.location.href = "/update";
-        return;
-    }
-
-    // 3. Desktop / Mobile Web Browsers (Chrome, Edge, Safari, Samsung Internet)
-    window.location.href = apkUrl;
+    // 2. Set location with cache-busting timestamp so v2.0 APK DownloadListener or browser triggers download
+    window.location.href = apkUrl + "?t=" + Date.now();
 }
 
 function triggerPwaInstall() {
@@ -239,12 +231,19 @@ function showCopyFeedback() {
     }
 }
 
+function isAndroidWebViewOrApk() {
+    const ua = navigator.userAgent || "";
+    return (
+        window.AndroidApp !== undefined ||
+        ua.includes("UltraPortalApp") ||
+        /; wv\)/i.test(ua) ||
+        (/Android/i.test(ua) && /Version\/[\d\.]+/i.test(ua) && /Chrome\/[\d\.]+/i.test(ua))
+    );
+}
+
 // In-App APK Version & Auto-Update Checker
 function checkApkUpdate() {
-    const isApk = (window.AndroidApp !== undefined) || (navigator.userAgent && navigator.userAgent.includes("UltraPortalApp"));
-    if (!isApk) return;
-
-    fetch("/api/app-version")
+    fetch("/api/app-version?t=" + Date.now(), { cache: "no-store" })
         .then(function (r) { return r.json(); })
         .then(function (data) {
             let installedVer = "2.0";
@@ -252,7 +251,13 @@ function checkApkUpdate() {
                 installedVer = window.AndroidApp.getAppVersion();
             } else {
                 const match = navigator.userAgent.match(/UltraPortalApp\/([\d\.]+)/);
-                if (match) installedVer = match[1];
+                if (match) {
+                    installedVer = match[1];
+                } else if (isAndroidWebViewOrApk()) {
+                    installedVer = "2.0";
+                } else {
+                    installedVer = localStorage.getItem("ultra_seen_app_version") || "2.0";
+                }
             }
 
             const verBadge = document.getElementById("apk-version-badge");
@@ -266,7 +271,7 @@ function checkApkUpdate() {
                 }
             }
 
-            // If installed version is older, display high-visibility 1-click update modal, banner & badge highlights
+            // Whenever installed version is older, display high-visibility 1-click update modal, banner & badge highlights
             if (parseFloat(installedVer) < parseFloat(data.latest_version)) {
                 // 1. Highlight header & sidebar badges as clickable update triggers
                 const appBadges = document.querySelectorAll(".app-badge");
@@ -279,7 +284,15 @@ function checkApkUpdate() {
                     badge.onclick = triggerApkUpdate;
                 });
 
-                // 2. Fire Android System Notification if permission is granted
+                // 2. Trigger native Android notification if Java bridge is available
+                if (window.AndroidApp && typeof window.AndroidApp.showNativeNotification === "function") {
+                    window.AndroidApp.showNativeNotification(
+                        "🚀 Ultra Portal v" + data.latest_version + " Ready!",
+                        "Tap to install the latest update with faster login & new features."
+                    );
+                }
+
+                // 3. Fallback: Browser/Web Push System Notification if permission is granted
                 try {
                     if ("Notification" in window && Notification.permission === "granted") {
                         if (navigator.serviceWorker && navigator.serviceWorker.ready) {
@@ -295,7 +308,7 @@ function checkApkUpdate() {
                     }
                 } catch (e) {}
 
-                // 3. Render prominent centered modal popup dialog (once per session)
+                // 4. Render prominent centered modal popup dialog (once per session)
                 if (!sessionStorage.getItem("apk_update_popup_dismissed") && !document.getElementById("ultra-update-popup")) {
                     const popup = document.createElement("div");
                     popup.id = "ultra-update-popup";
@@ -319,7 +332,7 @@ function checkApkUpdate() {
                     document.body.appendChild(popup);
                 }
 
-                // 4. Fixed Top Floating Banner
+                // 5. Fixed Top Floating Banner
                 if (!document.getElementById("apk-update-banner")) {
                     const banner = document.createElement("div");
                     banner.id = "apk-update-banner";

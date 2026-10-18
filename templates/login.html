@@ -114,7 +114,7 @@
 <body>
     <div class="login-card">
         <div class="text-center">
-            <span class="badge">OFFICIAL {{ app_version }} • PWA READY</span>
+            <span class="badge">OFFICIAL v{{ app_version }} • PWA READY</span>
             <h1>⚡ Ultra Portal</h1>
             <p class="subtitle">Attendance Intelligence, Analytics &amp; Student Workspace</p>
         </div>
@@ -173,7 +173,7 @@
             <div class="app-hub-section">
                 <div class="section-head">
                     <div class="section-title">📦 Download Raw Android APK <span id="apk-version-badge" style="font-size: 0.75rem; margin-left: 6px; font-weight: 600;"></span></div>
-                    <span class="section-badge-purple">NATIVE APK ({{ app_version }})</span>
+                    <span class="section-badge-purple">NATIVE APK (v{{ app_version }})</span>
                 </div>
                 <p class="section-desc">Direct signed Android APK (~2.5 MB). Full offline shell &amp; hardware back navigation.</p>
                 <a href="/download/UltraPortal.apk" class="btn-hub-action btn-hub-purple" download onclick="triggerApkUpdate();">
@@ -229,7 +229,7 @@
             <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">⚡</div>
         </div>
         <h3 style="font-size: 1.2rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px; letter-spacing: 0.02em;">Initializing Ultra Workspace</h3>
-        <p id="loader-status-msg" style="font-size: 0.88rem; color: #38bdf8; min-height: 22px; margin-bottom: 20px; font-weight: 600; transition: opacity 0.2s ease;">Establishing Secure Handshake with College Portal...</p>
+        <p id="loader-status-msg" style="font-size: 0.88rem; color: #38bdf8; min-height: 22px; margin-bottom: 20px; font-weight: 600; transition: opacity 0.2s ease;">⚡ Connecting to Ultra High-Speed Engine...</p>
         <div style="width: 100%; max-width: 290px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 14px;">
             <div id="loader-progress-bar" style="width: 15%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); border-radius: 10px; transition: width 0.3s ease;"></div>
         </div>
@@ -255,10 +255,11 @@
                     loader.style.display = "flex";
 
                     const messages = [
-                        "Establishing Secure Handshake with College Portal...",
-                        "Bypassing Captchas & Decrypting Session Tokens...",
-                        "Scraping Live Attendance & Calculating Safe Bunks...",
-                        "Synthesizing Exam Records & Finalizing Workspace..."
+                        "⚡ Connecting to Ultra High-Speed Engine...",
+                        "🔓 Authenticating Credentials...",
+                        "🚀 Bypassing slow college servers...",
+                        "🧮 Calculating safe bunks & 75% targets...",
+                        "✨ Launching your Ultra Workspace..."
                     ];
                     let msgIdx = 0;
                     let currentProgress = 15;
