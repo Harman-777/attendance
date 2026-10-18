@@ -34,6 +34,15 @@ jobs:
         with:
           gradle-version: '8.2'
 
+      - name: Setup Android SDK Environment & Licenses
+        run: |
+          if [ -z "$ANDROID_HOME" ]; then
+            export ANDROID_HOME=/usr/local/lib/android/sdk
+          fi
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "sdk.dir=$ANDROID_HOME" > android_app/local.properties
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+
       - name: Ensure Release Keystore Exists
         run: |
           if [ ! -f android_app/app/release.keystore ]; then
