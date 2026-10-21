@@ -271,6 +271,15 @@ def dashboard():
         save_snapshot(student_id, data)
         needs_background_sync = True
 
+    # Ensure today_date and today_attendance in cached data are always in real-time IST
+    today_str = datetime.now(IST).strftime("%d-%m-%Y")
+    today_pretty = datetime.now(IST).strftime("%a, %d %b %Y")
+    data["today_date"] = today_pretty
+    data["today_attendance"] = [
+        r for r in data.get("calendar_records", [])
+        if r.get("date") == today_str
+    ]
+
     if is_login_event:
         ua = request.headers.get("User-Agent", "")
         ip = get_trusted_client_ip()
@@ -337,6 +346,17 @@ def api_background_sync():
                 data["profile"] = cached.get("profile", {})
             if not data.get("student_email") and cached.get("student_email"):
                 data["student_email"] = cached.get("student_email")
+            if not data.get("calendar_records") and cached.get("calendar_records"):
+                data["calendar_records"] = cached.get("calendar_records", [])
+
+        today_str = datetime.now(IST).strftime("%d-%m-%Y")
+        today_pretty = datetime.now(IST).strftime("%a, %d %b %Y")
+        data["today_date"] = today_pretty
+        if not data.get("today_attendance"):
+            data["today_attendance"] = [
+                r for r in data.get("calendar_records", [])
+                if r.get("date") == today_str
+            ]
 
         save_vault = session.get("save_vault", True)
         new_absents = sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
@@ -351,6 +371,7 @@ def api_background_sync():
             "sync_mode": "attendance",
             "last_synced": data.get("last_synced"),
             "student_name": data.get("student_name"),
+            "today_date": today_pretty,
             "overall_pct": overall_pct,
             "overall_present": total_p,
             "overall_classes": total_t,
@@ -372,6 +393,16 @@ def api_background_sync():
             return jsonify({"ok": False, "message": err or "Portal offline"})
 
         session["portal_cookies"] = client.get_cookies()
+
+        today_str = datetime.now(IST).strftime("%d-%m-%Y")
+        today_pretty = datetime.now(IST).strftime("%a, %d %b %Y")
+        data["today_date"] = today_pretty
+        if not data.get("today_attendance"):
+            data["today_attendance"] = [
+                r for r in data.get("calendar_records", [])
+                if r.get("date") == today_str
+            ]
+
         save_vault = session.get("save_vault", True)
         new_absents = sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
         save_snapshot(student_id, data)
@@ -385,6 +416,7 @@ def api_background_sync():
             "sync_mode": "deep",
             "last_synced": data.get("last_synced"),
             "student_name": data.get("student_name"),
+            "today_date": today_pretty,
             "overall_pct": overall_pct,
             "overall_present": total_p,
             "overall_classes": total_t,

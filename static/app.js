@@ -720,14 +720,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
             }
 
-            // 4. Update Today's Attendance list in real time
-            if (res.today_attendance) {
+            // 4. Update Today's Live Attendance list in real time
+            if (res.today_attendance !== undefined) {
                 portalData.today_attendance = res.today_attendance;
-                const todayCard = document.querySelector(".today-card");
-                if (todayCard) {
-                    let listWrap = todayCard.querySelector(".today-list");
-                    if (res.today_attendance.length > 0) {
-                        let html = "";
+                const todayBanner = document.getElementById("today-live-banner") || document.querySelector(".today-banner") || document.querySelector(".today-card");
+                if (todayBanner) {
+                    const dateBadge = document.getElementById("today-date-badge") || todayBanner.querySelector(".today-header span");
+                    if (dateBadge && res.today_date) {
+                        dateBadge.textContent = res.today_date;
+                    }
+
+                    const container = document.getElementById("today-attendance-container") || todayBanner;
+                    if (res.today_attendance && res.today_attendance.length > 0) {
+                        let html = '<div class="today-list" id="today-list">';
                         res.today_attendance.forEach(function (item) {
                             const isPres = item.status === "PRESENT";
                             html += `
@@ -740,14 +745,11 @@ document.addEventListener("DOMContentLoaded", function () {
                                 </div>
                             `;
                         });
-                        if (!listWrap) {
-                            const existingP = todayCard.querySelector("p");
-                            if (existingP) existingP.remove();
-                            listWrap = document.createElement("div");
-                            listWrap.className = "today-list";
-                            todayCard.appendChild(listWrap);
-                        }
-                        listWrap.innerHTML = html;
+                        html += '</div>';
+                        container.innerHTML = html;
+                    } else {
+                        const dateText = res.today_date || (dateBadge ? dateBadge.textContent : "today");
+                        container.innerHTML = `<p id="today-empty-msg" style="color: #9ca3af; font-size: 0.92rem;">No lectures marked for today (${dateText}) yet. Any new absent marks will trigger an instant alert.</p>`;
                     }
                 }
             }

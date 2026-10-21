@@ -518,8 +518,21 @@ class PortalClient:
                     for row in s.find_all("tr"):
                         row_text = row.get_text(" ", strip=True)
                         upper_text = row_text.upper()
-                        date_match = re.search(r"(\d{2}-\d{2}-\d{4})", row_text)
-                        date_val = date_match.group(1) if date_match else None
+                        date_match = re.search(r"\b(\d{1,2})[-/\.](\d{1,2})[-/\.](\d{2,4})\b", row_text)
+                        date_val = None
+                        if date_match:
+                            d_num, m_num, y_num = int(date_match.group(1)), int(date_match.group(2)), date_match.group(3)
+                            if len(y_num) == 2:
+                                y_num = "20" + y_num
+                            date_val = f"{d_num:02d}-{m_num:02d}-{y_num}"
+                        else:
+                            m_text = re.search(r"\b(\d{1,2})[-/\s]+([A-Za-z]{3,9})[-/\s]+(\d{4})\b", row_text)
+                            if m_text:
+                                try:
+                                    dt = datetime.strptime(f"{int(m_text.group(1)):02d} {m_text.group(2)[:3].title()} {m_text.group(3)}", "%d %b %Y")
+                                    date_val = dt.strftime("%d-%m-%Y")
+                                except Exception:
+                                    date_val = None
 
                         if "PRESENT" in upper_text:
                             scrape_p += 1
@@ -579,11 +592,15 @@ class PortalClient:
 
         all_records = []
         today_attendance = []
+        seen_today_keys = set()
         for subj in subject_results:
-            for rec in subj["records"]:
+            for rec in subj.get("records", []):
                 all_records.append(rec)
-                if rec["date"] == today_str:
-                    today_attendance.append(rec)
+                if rec.get("date") == today_str:
+                    today_key = (rec.get("subject"), rec.get("status"))
+                    if today_key not in seen_today_keys:
+                        seen_today_keys.add(today_key)
+                        today_attendance.append(rec)
 
         if fast_mode:
             return {

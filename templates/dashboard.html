@@ -170,32 +170,34 @@
             </div>
 
             <!-- Today's Live Attendance Banner -->
-            <div class="today-banner">
+            <div class="today-banner" id="today-live-banner">
                 <div class="today-header">
                     <h3 style="font-size: 1.12rem; color: #38bdf8;">⚡ Today's Live Attendance</h3>
-                    <span style="color: #9ca3af; font-size: 0.88rem; font-weight: 600;">{{ data.today_date }}</span>
+                    <span id="today-date-badge" style="color: #9ca3af; font-size: 0.88rem; font-weight: 600;">{{ data.today_date }}</span>
                 </div>
-                {% if data.today_attendance %}
-                <div class="today-list">
-                    {% for item in data.today_attendance %}
-                    <div class="today-pill">
-                        <span class="today-subj-name">{{ item.subject }}</span>
-                        <div class="today-status-wrap">
-                            <span
-                                class="{% if item.status == 'PRESENT' %}badge-present{% else %}badge-absent{% endif %}">{{
-                                item.status }}</span>
-                            {% if item.status == 'ABSENT' %}
-                            <button type="button" class="btn-dispute-pill open-dispute-btn"
-                                data-subject="{{ item.subject }}" data-date="{{ item.date }}">Dispute</button>
-                            {% endif %}
+                <div id="today-attendance-container">
+                    {% if data.today_attendance %}
+                    <div class="today-list" id="today-list">
+                        {% for item in data.today_attendance %}
+                        <div class="today-pill">
+                            <span class="today-subj-name">{{ item.subject }}</span>
+                            <div class="today-status-wrap">
+                                <span
+                                    class="{% if item.status == 'PRESENT' %}badge-present{% else %}badge-absent{% endif %}">{{
+                                    item.status }}</span>
+                                {% if item.status == 'ABSENT' %}
+                                <button type="button" class="btn-dispute-pill open-dispute-btn"
+                                    data-subject="{{ item.subject }}" data-date="{{ item.date }}">Dispute</button>
+                                {% endif %}
+                            </div>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                    {% else %}
+                    <p id="today-empty-msg" style="color: #9ca3af; font-size: 0.92rem;">No lectures marked for today ({{ data.today_date }}) yet.
+                        Any new absent marks will trigger an instant alert.</p>
+                    {% endif %}
                 </div>
-                {% else %}
-                <p style="color: #9ca3af; font-size: 0.92rem;">No lectures marked for today ({{ data.today_date }}) yet.
-                    Any new absent marks will trigger an instant alert.</p>
-                {% endif %}
             </div>
 
             <div class="subject-grid">
