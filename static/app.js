@@ -730,7 +730,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         dateBadge.textContent = res.today_date;
                     }
 
-                    const container = document.getElementById("today-attendance-container") || todayBanner;
+                    const container = document.getElementById("today-live-attendance-body") || document.getElementById("today-attendance-container") || todayBanner;
                     if (res.today_attendance && res.today_attendance.length > 0) {
                         let html = '<div class="today-list" id="today-list">';
                         res.today_attendance.forEach(function (item) {

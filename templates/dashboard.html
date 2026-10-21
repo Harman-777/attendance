@@ -175,7 +175,7 @@
                     <h3 style="font-size: 1.12rem; color: #38bdf8;">⚡ Today's Live Attendance</h3>
                     <span id="today-date-badge" style="color: #9ca3af; font-size: 0.88rem; font-weight: 600;">{{ data.today_date }}</span>
                 </div>
-                <div id="today-attendance-container">
+                <div id="today-live-attendance-body" class="today-attendance-body">
                     {% if data.today_attendance %}
                     <div class="today-list" id="today-list">
                         {% for item in data.today_attendance %}
