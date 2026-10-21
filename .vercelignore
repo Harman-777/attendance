@@ -8,3 +8,6 @@ __pycache__/
 *.pyo
 .env.local
 scratch/
+snapshot_*.json
+cache/
+*.apk

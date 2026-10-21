@@ -193,6 +193,27 @@
                         </div>
                         {% endfor %}
                     </div>
+                    {% elif data.latest_attendance_records %}
+                    <p id="today-empty-msg" style="color: #9ca3af; font-size: 0.90rem; margin-bottom: 8px;">No lectures marked for today ({{ data.today_date }}) yet. Any new marks will trigger an instant alert.</p>
+                    <div style="font-size: 0.82rem; color: #38bdf8; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <span>📌 Last Uploaded on College Portal ({{ data.latest_attendance_date }}):</span>
+                    </div>
+                    <div class="today-list" id="today-list">
+                        {% for item in data.latest_attendance_records %}
+                        <div class="today-pill" style="opacity: 0.94; border-color: rgba(56, 189, 248, 0.25);">
+                            <span class="today-subj-name">{{ item.subject }}</span>
+                            <div class="today-status-wrap">
+                                <span
+                                    class="{% if item.status == 'PRESENT' %}badge-present{% else %}badge-absent{% endif %}">{{
+                                    item.status }}</span>
+                                {% if item.status == 'ABSENT' %}
+                                <button type="button" class="btn-dispute-pill open-dispute-btn"
+                                    data-subject="{{ item.subject }}" data-date="{{ item.date }}">Dispute</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                     {% else %}
                     <p id="today-empty-msg" style="color: #9ca3af; font-size: 0.92rem;">No lectures marked for today ({{ data.today_date }}) yet.
                         Any new absent marks will trigger an instant alert.</p>

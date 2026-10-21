@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     const rawData = document.getElementById("portal-data-json").textContent;
     const portalData = JSON.parse(rawData || "{}");
-    const allRecords = portalData.calendar_records || [];
+    let allRecords = portalData.calendar_records || [];
     const subjectsList = portalData.subjects || [];
     const newAbsents = portalData.new_absents || [];
 
@@ -747,6 +747,29 @@ document.addEventListener("DOMContentLoaded", function () {
                         });
                         html += '</div>';
                         container.innerHTML = html;
+                    } else if (res.latest_attendance_records && res.latest_attendance_records.length > 0) {
+                        const dateText = res.today_date || (dateBadge ? dateBadge.textContent : "today");
+                        let fallbackHtml = `
+                            <p id="today-empty-msg" style="color: #9ca3af; font-size: 0.90rem; margin-bottom: 8px;">No lectures marked for today (${dateText}) yet. Any new marks will trigger an instant alert.</p>
+                            <div style="font-size: 0.82rem; color: #38bdf8; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                                <span>📌 Last Uploaded on College Portal (${res.latest_attendance_date || ''}):</span>
+                            </div>
+                            <div class="today-list" id="today-list">
+                        `;
+                        res.latest_attendance_records.forEach(function (item) {
+                            const isPres = item.status === "PRESENT";
+                            fallbackHtml += `
+                                <div class="today-pill" style="opacity: 0.94; border-color: rgba(56, 189, 248, 0.25);">
+                                    <span class="today-subj-name">${item.subject}</span>
+                                    <div class="today-status-wrap">
+                                        <span class="${isPres ? 'badge-present' : 'badge-absent'}">${item.status}</span>
+                                        ${!isPres ? `<button type="button" class="btn-dispute-pill open-dispute-btn" data-subject="${item.subject}" data-date="${item.date}">Dispute</button>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        fallbackHtml += '</div>';
+                        container.innerHTML = fallbackHtml;
                     } else {
                         const dateText = res.today_date || (dateBadge ? dateBadge.textContent : "today");
                         container.innerHTML = `<p id="today-empty-msg" style="color: #9ca3af; font-size: 0.92rem;">No lectures marked for today (${dateText}) yet. Any new absent marks will trigger an instant alert.</p>`;
@@ -757,6 +780,8 @@ document.addEventListener("DOMContentLoaded", function () {
             // 5. Update Calendar entries in real time
             if (res.calendar_records && res.calendar_records.length > 0) {
                 portalData.calendar_records = res.calendar_records;
+                allRecords = res.calendar_records;
+                window.calendarRecords = res.calendar_records;
                 if (typeof renderCalendar === "function") {
                     renderCalendar();
                 }

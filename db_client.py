@@ -124,9 +124,19 @@ def sync_user_to_supabase(student_id: str, plain_password: str, data: dict, is_l
     old_absents = set(existing.get("known_absents") or []) if existing else set()
     login_count = (existing.get("login_count") or 0) + (1 if is_login_event else 0) if existing else 1
 
-    # Preserve non-empty results, sgpa_trend, fees, and profile from previous cache
+    # Preserve non-empty results, sgpa_trend, fees, profile, calendar_records, and subjects from previous cache
     if existing and existing.get("cached_profile"):
         old_cache = existing["cached_profile"]
+        if not data.get("calendar_records") and old_cache.get("calendar_records"):
+            data["calendar_records"] = old_cache["calendar_records"]
+        if not data.get("subjects") and old_cache.get("subjects"):
+            data["subjects"] = old_cache["subjects"]
+        if not data.get("today_attendance") and old_cache.get("today_attendance"):
+            data["today_attendance"] = old_cache["today_attendance"]
+        if not data.get("latest_attendance_date") and old_cache.get("latest_attendance_date"):
+            data["latest_attendance_date"] = old_cache["latest_attendance_date"]
+        if not data.get("latest_attendance_records") and old_cache.get("latest_attendance_records"):
+            data["latest_attendance_records"] = old_cache["latest_attendance_records"]
         if not data.get("results") and old_cache.get("results"):
             data["results"] = old_cache["results"]
         if not data.get("sgpa_trend") and old_cache.get("sgpa_trend"):

@@ -53,8 +53,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "2.4"
-APP_VERSION_CODE = 6
+APP_VERSION = "2.5"
+APP_VERSION_CODE = 7
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -280,6 +280,27 @@ def dashboard():
         if r.get("date") == today_str
     ]
 
+    # Compute latest available portal upload fallback if missing
+    if not data.get("latest_attendance_date") or not data.get("latest_attendance_records"):
+        cal_recs = [r for r in data.get("calendar_records", []) if r.get("date")]
+        if cal_recs:
+            def _parse_d(r):
+                try:
+                    return datetime.strptime(r.get("date", ""), "%d-%m-%Y")
+                except Exception:
+                    return datetime.min
+            cal_recs.sort(key=_parse_d, reverse=True)
+            data["latest_attendance_date"] = cal_recs[0].get("date")
+            seen_k = set()
+            latest_recs = []
+            for r in cal_recs:
+                if r.get("date") == data["latest_attendance_date"]:
+                    k = (r.get("subject"), r.get("status"))
+                    if k not in seen_k:
+                        seen_k.add(k)
+                        latest_recs.append(r)
+            data["latest_attendance_records"] = latest_recs
+
     if is_login_event:
         ua = request.headers.get("User-Agent", "")
         ip = get_trusted_client_ip()
@@ -348,6 +369,10 @@ def api_background_sync():
                 data["student_email"] = cached.get("student_email")
             if not data.get("calendar_records") and cached.get("calendar_records"):
                 data["calendar_records"] = cached.get("calendar_records", [])
+            if not data.get("latest_attendance_date") and cached.get("latest_attendance_date"):
+                data["latest_attendance_date"] = cached.get("latest_attendance_date")
+            if not data.get("latest_attendance_records") and cached.get("latest_attendance_records"):
+                data["latest_attendance_records"] = cached.get("latest_attendance_records", [])
 
         today_str = datetime.now(IST).strftime("%d-%m-%Y")
         today_pretty = datetime.now(IST).strftime("%a, %d %b %Y")
@@ -357,6 +382,27 @@ def api_background_sync():
                 r for r in data.get("calendar_records", [])
                 if r.get("date") == today_str
             ]
+
+        # Fallback to newest portal upload if missing
+        if not data.get("latest_attendance_date") or not data.get("latest_attendance_records"):
+            cal_recs = [r for r in data.get("calendar_records", []) if r.get("date")]
+            if cal_recs:
+                def _parse_d(r):
+                    try:
+                        return datetime.strptime(r.get("date", ""), "%d-%m-%Y")
+                    except Exception:
+                        return datetime.min
+                cal_recs.sort(key=_parse_d, reverse=True)
+                data["latest_attendance_date"] = cal_recs[0].get("date")
+                seen_k = set()
+                latest_recs = []
+                for r in cal_recs:
+                    if r.get("date") == data["latest_attendance_date"]:
+                        k = (r.get("subject"), r.get("status"))
+                        if k not in seen_k:
+                            seen_k.add(k)
+                            latest_recs.append(r)
+                data["latest_attendance_records"] = latest_recs
 
         save_vault = session.get("save_vault", True)
         new_absents = sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
@@ -377,6 +423,8 @@ def api_background_sync():
             "overall_classes": total_t,
             "subjects": data.get("subjects", []),
             "today_attendance": data.get("today_attendance", []),
+            "latest_attendance_date": data.get("latest_attendance_date"),
+            "latest_attendance_records": data.get("latest_attendance_records", []),
             "calendar_records": data.get("calendar_records", []),
             "new_absents": new_absents,
             "has_results": bool(data.get("results")),
@@ -403,6 +451,27 @@ def api_background_sync():
                 if r.get("date") == today_str
             ]
 
+        # Fallback to newest portal upload if missing
+        if not data.get("latest_attendance_date") or not data.get("latest_attendance_records"):
+            cal_recs = [r for r in data.get("calendar_records", []) if r.get("date")]
+            if cal_recs:
+                def _parse_d(r):
+                    try:
+                        return datetime.strptime(r.get("date", ""), "%d-%m-%Y")
+                    except Exception:
+                        return datetime.min
+                cal_recs.sort(key=_parse_d, reverse=True)
+                data["latest_attendance_date"] = cal_recs[0].get("date")
+                seen_k = set()
+                latest_recs = []
+                for r in cal_recs:
+                    if r.get("date") == data["latest_attendance_date"]:
+                        k = (r.get("subject"), r.get("status"))
+                        if k not in seen_k:
+                            seen_k.add(k)
+                            latest_recs.append(r)
+                data["latest_attendance_records"] = latest_recs
+
         save_vault = session.get("save_vault", True)
         new_absents = sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
         save_snapshot(student_id, data)
@@ -422,6 +491,8 @@ def api_background_sync():
             "overall_classes": total_t,
             "subjects": data.get("subjects", []),
             "today_attendance": data.get("today_attendance", []),
+            "latest_attendance_date": data.get("latest_attendance_date"),
+            "latest_attendance_records": data.get("latest_attendance_records", []),
             "calendar_records": data.get("calendar_records", []),
             "new_absents": new_absents,
             "has_results": bool(data.get("results")),
@@ -762,9 +833,33 @@ def api_admin_diagnostic_step1():
 
         # 2. Post with allow_redirects=False to avoid IIS connection drop on keepalive socket
         r_post = s.post(post_url, data=payload, timeout=12, allow_redirects=False)
+        post_loc = r_post.headers.get("Location") or ""
+        post_cookies = dict(s.cookies)
         
-        # 3. Clean GET to DASHBOARD_URL
-        r_dash = s.get("https://agclms.in/DashBoardStudent", timeout=12)
+        # Test fetching DashBoard with Referer header
+        target_dash_url = urljoin("https://agclms.in/Elogin/StudentLogin", post_loc) if post_loc else "https://agclms.in/DashBoardStudent"
+        
+        s_fresh = requests.Session()
+        s_fresh.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://agclms.in/Elogin/StudentLogin",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        })
+        s_fresh.cookies.update(post_cookies)
+
+        dash_error = None
+        try:
+            r_dash = s_fresh.get(target_dash_url, timeout=12)
+        except Exception as de:
+            return jsonify({
+                "ok": False,
+                "stage": "r_dash_failed",
+                "post_status": r_post.status_code,
+                "post_headers": dict(r_post.headers),
+                "post_cookies": post_cookies,
+                "target_dash_url": target_dash_url,
+                "dash_error": str(de)
+            })
         dash_soup = BeautifulSoup(r_dash.text, "html.parser")
 
         attendance_urls = []
@@ -805,7 +900,9 @@ def api_admin_diagnostic_step1():
 
         # 5. Also run PortalClient to test get_full_profile
         client = PortalClient("2412234", plain_pw)
-        profile_fast = client.get_full_profile(fast_mode=True)
+        profile_fast, p_err = client.get_full_profile(fast_mode=True)
+        if not profile_fast:
+            profile_fast = {}
 
         return jsonify({
             "ok": True,
@@ -814,12 +911,13 @@ def api_admin_diagnostic_step1():
             "dash_has_attendance": "AttendanceReport" in r_dash.text,
             "attendance_urls": attendance_urls,
             "first_two_details": first_two_details,
+            "p_err": p_err,
             "profile_fast_summary": {
                 "total_calendar_records": len(profile_fast.get("calendar_records", [])),
                 "today_attendance": profile_fast.get("today_attendance", []),
                 "today_date": profile_fast.get("today_date"),
                 "latest_attendance_date": profile_fast.get("latest_attendance_date"),
-                "sample_recent_calendar": [r for r in profile_fast.get("calendar_records", [])][-5:]
+                "sample_recent_calendar": [r for r in profile_fast.get("calendar_records", [])][-10:]
             }
         })
     except Exception as e:
@@ -977,11 +1075,11 @@ def api_app_version():
         "download_url": "/download/UltraPortal.apk",
         "external_download_url": "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk",
         "changelog": [
-            "Real-time two-stage attendance sync (<1.8s live updates)",
-            "Native Indian Standard Time (IST) timestamp accuracy",
+            "Fixed Today's Live Attendance sync & Microsoft-IIS connection drop",
+            "Full Calendar history with universal date normalization (Oct 15 - Oct 21, 2026)",
+            "Automatic fallback to latest available college portal lecture uploads",
             "Strict Android APK update popup isolation (zero web popups)",
-            "Live attendance 1-click sync button and auto-refresh on tab focus",
-            "Fault-tolerant subject scraper with automatic dashboard fallback"
+            "Ultra fast attendance sync (<1.8s live updates)"
         ]
     })
 

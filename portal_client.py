@@ -67,10 +67,26 @@ class PortalClient:
                 payload["Password"] = self.password
 
             post_url = urljoin(LOGIN_URL, form["action"]) if (form and form.get("action")) else LOGIN_URL
-            # Use allow_redirects=False to avoid IIS terminating keepalive socket on 302 redirect
-            self.session.post(post_url, data=payload, timeout=12, allow_redirects=False)
+            # 1. Post with allow_redirects=False to prevent IIS keepalive socket drops
+            r_post = self.session.post(post_url, data=payload, timeout=12, allow_redirects=False)
 
-            dash_res = self.session.get(DASHBOARD_URL, timeout=10)
+            post_loc = r_post.headers.get("Location") or ""
+            target_dash_url = urljoin(LOGIN_URL, post_loc) if post_loc else DASHBOARD_URL
+
+            # 2. Spawn a clean session to avoid pooled TCP resets from Microsoft-IIS
+            fresh_session = requests.Session()
+            adapter = HTTPAdapter(pool_connections=20, pool_maxsize=20, max_retries=2)
+            fresh_session.mount("https://", adapter)
+            fresh_session.mount("http://", adapter)
+            fresh_session.headers.update({
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": LOGIN_URL,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            })
+            fresh_session.cookies.update(self.session.cookies)
+            self.session = fresh_session
+
+            dash_res = self.session.get(target_dash_url, timeout=12)
             if "StudentLogin" in dash_res.url or "AttendanceReport" not in dash_res.text:
                 return False, "Invalid Student ID or Password on college portal."
 
@@ -432,14 +448,8 @@ class PortalClient:
         Attendance & Simulator tab renders immediately.
         """
         dash_html = getattr(self, "_cached_dash_html", None)
-        if not dash_html:
-            if not self.logged_in:
-                success, err = self.authenticate()
-                if not success:
-                    return None, err
-                dash_html = getattr(self, "_cached_dash_html", None)
-
-            if not dash_html:
+        if not dash_html or "AttendanceReport" not in dash_html:
+            try:
                 dash_res = self.session.get(DASHBOARD_URL, timeout=10)
                 if "StudentLogin" in dash_res.url or "AttendanceReport" not in dash_res.text:
                     success, err = self.authenticate()
@@ -448,6 +458,11 @@ class PortalClient:
                     dash_html = getattr(self, "_cached_dash_html", "")
                 else:
                     dash_html = dash_res.text
+            except Exception:
+                success, err = self.authenticate()
+                if not success:
+                    return None, err
+                dash_html = getattr(self, "_cached_dash_html", "")
 
         today_str = datetime.now(IST).strftime("%d-%m-%Y")
         today_pretty = datetime.now(IST).strftime("%a, %d %b %Y")
@@ -510,47 +525,63 @@ class PortalClient:
             absent = max(0, fallback_t - fallback_p)
             records = []
 
-            try:
-                r = self.session.get(url, timeout=6)
-                if r.status_code == 200 and len(r.text) > 200:
-                    s = BeautifulSoup(r.text, "html.parser")
-                    scrape_p, scrape_a = 0, 0
-                    scrape_records = []
-                    for row in s.find_all("tr"):
-                        row_text = row.get_text(" ", strip=True)
-                        upper_text = row_text.upper()
-                        date_match = re.search(r"\b(\d{1,2})[-/\.](\d{1,2})[-/\.](\d{2,4})\b", row_text)
-                        date_val = None
-                        if date_match:
-                            d_num, m_num, y_num = int(date_match.group(1)), int(date_match.group(2)), date_match.group(3)
-                            if len(y_num) == 2:
-                                y_num = "20" + y_num
-                            date_val = f"{d_num:02d}-{m_num:02d}-{y_num}"
-                        else:
-                            m_text = re.search(r"\b(\d{1,2})[-/\s]+([A-Za-z]{3,9})[-/\s]+(\d{4})\b", row_text)
-                            if m_text:
-                                try:
-                                    dt = datetime.strptime(f"{int(m_text.group(1)):02d} {m_text.group(2)[:3].title()} {m_text.group(3)}", "%d %b %Y")
-                                    date_val = dt.strftime("%d-%m-%Y")
-                                except Exception:
-                                    date_val = None
+            for attempt in range(2):
+                try:
+                    r = self.session.get(url, timeout=8)
+                    if "StudentLogin" in r.url:
+                        # Session expired; re-authenticate and retry GET once
+                        self.authenticate()
+                        r = self.session.get(url, timeout=8)
 
-                        if "PRESENT" in upper_text:
-                            scrape_p += 1
-                            if date_val:
-                                scrape_records.append({"date": date_val, "subject": name, "status": "PRESENT"})
-                        elif "ABSENT" in upper_text:
-                            scrape_a += 1
-                            if date_val:
-                                scrape_records.append({"date": date_val, "subject": name, "status": "ABSENT"})
+                    if r.status_code == 200 and len(r.text) > 200:
+                        s = BeautifulSoup(r.text, "html.parser")
+                        scrape_p, scrape_a = 0, 0
+                        scrape_records = []
+                        for row in s.find_all("tr"):
+                            row_text = row.get_text(" ", strip=True)
+                            upper_text = row_text.upper()
+                            date_val = None
 
-                    if scrape_p + scrape_a > 0 or len(scrape_records) > 0:
-                        present = scrape_p
-                        absent = scrape_a
-                        records = scrape_records
-            except Exception:
-                # Keep fallback numbers on timeout or network glitch so scrape never fails
-                pass
+                            # Universal Date Normalization to DD-MM-YYYY
+                            d_match = re.search(r"\b(\d{1,2})[-/\.](\d{1,2})[-/\.](\d{2,4})\b", row_text)
+                            if d_match:
+                                d_num = int(d_match.group(1))
+                                m_num = int(d_match.group(2))
+                                y_str = d_match.group(3)
+                                if len(y_str) == 2:
+                                    y_str = "20" + y_str
+                                if d_num > 12 and m_num <= 12:
+                                    date_val = f"{d_num:02d}-{m_num:02d}-{y_str}"
+                                elif m_num > 12 and d_num <= 12:
+                                    date_val = f"{m_num:02d}-{d_num:02d}-{y_str}"
+                                else:
+                                    date_val = f"{d_num:02d}-{m_num:02d}-{y_str}"
+                            else:
+                                m_text = re.search(r"\b(\d{1,2})[-/\s]+([A-Za-z]{3,9})[-/\s]+(\d{4})\b", row_text)
+                                if m_text:
+                                    try:
+                                        dt = datetime.strptime(f"{int(m_text.group(1)):02d} {m_text.group(2)[:3].title()} {m_text.group(3)}", "%d %b %Y")
+                                        date_val = dt.strftime("%d-%m-%Y")
+                                    except Exception:
+                                        date_val = None
+
+                            if "PRESENT" in upper_text:
+                                scrape_p += 1
+                                if date_val:
+                                    scrape_records.append({"date": date_val, "subject": name, "status": "PRESENT"})
+                            elif "ABSENT" in upper_text:
+                                scrape_a += 1
+                                if date_val:
+                                    scrape_records.append({"date": date_val, "subject": name, "status": "ABSENT"})
+
+                        if scrape_p + scrape_a > 0 or len(scrape_records) > 0:
+                            present = scrape_p
+                            absent = scrape_a
+                            records = scrape_records
+                        break
+                except Exception:
+                    if attempt == 1:
+                        pass
 
             total = present + absent
             if total == 0 and fallback_t > 0:
@@ -603,6 +634,28 @@ class PortalClient:
                         seen_today_keys.add(today_key)
                         today_attendance.append(rec)
 
+        # Compute latest_attendance_date and latest_attendance_records across all records
+        latest_attendance_date = None
+        latest_attendance_records = []
+        if all_records:
+            def parse_rec_date(r):
+                try:
+                    return datetime.strptime(r.get("date", ""), "%d-%m-%Y")
+                except Exception:
+                    return datetime.min
+
+            valid_records = [r for r in all_records if r.get("date")]
+            if valid_records:
+                valid_records.sort(key=parse_rec_date, reverse=True)
+                latest_attendance_date = valid_records[0].get("date")
+                seen_latest = set()
+                for r in valid_records:
+                    if r.get("date") == latest_attendance_date:
+                        k = (r.get("subject"), r.get("status"))
+                        if k not in seen_latest:
+                            seen_latest.add(k)
+                            latest_attendance_records.append(r)
+
         if fast_mode:
             return {
                 "student_id": self.student_id,
@@ -614,6 +667,8 @@ class PortalClient:
                 "is_offline": False,
                 "partial_load": True,
                 "today_attendance": today_attendance,
+                "latest_attendance_date": latest_attendance_date,
+                "latest_attendance_records": latest_attendance_records,
                 "calendar_records": all_records,
                 "subjects": subject_results,
                 "results": [],
@@ -648,6 +703,8 @@ class PortalClient:
             "is_offline": False,
             "partial_load": False,
             "today_attendance": today_attendance,
+            "latest_attendance_date": latest_attendance_date,
+            "latest_attendance_records": latest_attendance_records,
             "calendar_records": all_records,
             "subjects": subject_results,
             "results": results_data,
