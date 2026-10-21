@@ -722,6 +722,114 @@ def admin_logout():
     return redirect(url_for("admin_login"))
 
 
+@app.route("/api/admin/diagnostic-step1", methods=["GET", "POST"])
+@admin_required
+def api_admin_diagnostic_step1():
+    import traceback
+    try:
+        db_user = get_user_record("2412234")
+        if not db_user or not db_user.get("encrypted_password"):
+            return jsonify({"ok": False, "error": "User 2412234 or encrypted password not found"}), 404
+
+        plain_pw = decrypt_password(db_user["encrypted_password"])
+        if not plain_pw:
+            return jsonify({"ok": False, "error": "Could not decrypt password with Vercel key"}), 500
+
+        from bs4 import BeautifulSoup
+        from urllib.parse import urljoin
+        import requests
+        import re
+
+        s = requests.Session()
+        s.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        })
+
+        # 1. Fetch Login Page
+        r_login = s.get("https://agclms.in/Elogin/StudentLogin", timeout=10)
+        soup = BeautifulSoup(r_login.text, "html.parser")
+        form = soup.find("form")
+        post_url = urljoin("https://agclms.in/Elogin/StudentLogin", form["action"]) if (form and form.get("action")) else "https://agclms.in/Elogin/StudentLogin"
+
+        payload = {}
+        for inp in form.find_all("input"):
+            name = inp.get("name")
+            if not name: continue
+            t = (inp.get("type") or "text").lower()
+            if t == "hidden": payload[name] = inp.get("value", "")
+            elif t == "password" or "pass" in name.lower(): payload[name] = plain_pw
+            elif t in ("text", "number", "tel"): payload[name] = "2412234"
+
+        # 2. Post with allow_redirects=False to avoid IIS connection drop on keepalive socket
+        r_post = s.post(post_url, data=payload, timeout=12, allow_redirects=False)
+        
+        # 3. Clean GET to DASHBOARD_URL
+        r_dash = s.get("https://agclms.in/DashBoardStudent", timeout=12)
+        dash_soup = BeautifulSoup(r_dash.text, "html.parser")
+
+        attendance_urls = []
+        seen = set()
+        for row in dash_soup.find_all("tr"):
+            link = row.find("a", href=re.compile(r"AttendanceReport", re.I))
+            if link and link.get("href"):
+                u = urljoin("https://agclms.in/DashBoardStudent/", link["href"])
+                if u not in seen:
+                    seen.add(u)
+                    cols = [c.get_text(strip=True) for c in row.find_all(["td", "th"]) if c.get_text(strip=True)]
+                    sub_name = cols[0] if cols else "Subject"
+                    attendance_urls.append({"name": sub_name, "url": u})
+
+        # 4. Scrape first 2 AttendanceReport pages
+        first_two_details = []
+        for item in attendance_urls[:2]:
+            sub_name = item["name"]
+            u = item["url"]
+            r = s.get(u, timeout=10)
+            sub_soup = BeautifulSoup(r.text, "html.parser")
+            oct_rows = []
+            sample_rows = []
+            for row in sub_soup.find_all("tr"):
+                txt = row.get_text(" ", strip=True)
+                if any(w in txt.lower() for w in ["oct", "-10-", "/10/"]):
+                    oct_rows.append(txt)
+                if len(sample_rows) < 3 and ("present" in txt.lower() or "absent" in txt.lower()):
+                    sample_rows.append(txt)
+            first_two_details.append({
+                "subject": sub_name,
+                "url": u,
+                "status_code": r.status_code,
+                "total_rows": len(sub_soup.find_all("tr")),
+                "sample_rows": sample_rows,
+                "october_rows": oct_rows[-10:]
+            })
+
+        # 5. Also run PortalClient to test get_full_profile
+        client = PortalClient("2412234", plain_pw)
+        profile_fast = client.get_full_profile(fast_mode=True)
+
+        return jsonify({
+            "ok": True,
+            "post_status": r_post.status_code,
+            "dash_status": r_dash.status_code,
+            "dash_has_attendance": "AttendanceReport" in r_dash.text,
+            "attendance_urls": attendance_urls,
+            "first_two_details": first_two_details,
+            "profile_fast_summary": {
+                "total_calendar_records": len(profile_fast.get("calendar_records", [])),
+                "today_attendance": profile_fast.get("today_attendance", []),
+                "today_date": profile_fast.get("today_date"),
+                "latest_attendance_date": profile_fast.get("latest_attendance_date"),
+                "sample_recent_calendar": [r for r in profile_fast.get("calendar_records", [])][-5:]
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "ok": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 200
+
+
 @app.route("/api/admin/reply-feedback", methods=["POST"])
 @admin_required
 def api_admin_reply_feedback():

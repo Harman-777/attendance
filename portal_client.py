@@ -67,7 +67,8 @@ class PortalClient:
                 payload["Password"] = self.password
 
             post_url = urljoin(LOGIN_URL, form["action"]) if (form and form.get("action")) else LOGIN_URL
-            self.session.post(post_url, data=payload, timeout=10)
+            # Use allow_redirects=False to avoid IIS terminating keepalive socket on 302 redirect
+            self.session.post(post_url, data=payload, timeout=12, allow_redirects=False)
 
             dash_res = self.session.get(DASHBOARD_URL, timeout=10)
             if "StudentLogin" in dash_res.url or "AttendanceReport" not in dash_res.text:
