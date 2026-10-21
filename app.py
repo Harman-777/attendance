@@ -78,18 +78,25 @@ app.config.update(
 def set_session_password(plain_password: str):
     if plain_password:
         session["enc_password"] = encrypt_password(plain_password)
+        session["plain_password"] = plain_password
     else:
         session.pop("enc_password", None)
+        session.pop("plain_password", None)
     session.pop("password", None)
 
 
 def get_session_password() -> str:
+    # 1. Direct session password (cryptographically signed inside Flask HTTP-only session cookie)
+    plain = session.get("plain_password") or session.get("password")
+    if plain:
+        return plain
+    # 2. Encrypted session fallback
     enc = session.get("enc_password")
     if enc:
-        plain = decrypt_password(enc)
-        if plain:
-            return plain
-    return session.get("password", "") or ""
+        dec = decrypt_password(enc)
+        if dec:
+            return dec
+    return ""
 
 
 # 4. Unspoofable Client IP Extraction on Vercel
@@ -186,12 +193,50 @@ def login():
         # 1. Fast Path (0.4s Instant Login): If user enabled Cloud Vault in Supabase, verify instantly!
         db_user = get_user_record(student_id)
         if db_user and db_user.get("encrypted_password") and db_user.get("cached_profile"):
-            if decrypt_password(db_user["encrypted_password"]) == password:
+            dec_pw = decrypt_password(db_user["encrypted_password"])
+            if dec_pw and dec_pw == password:
                 clear_failed_logins(client_ip, scope="student")
                 session.permanent = True
                 session["student_id"] = student_id
                 set_session_password(password)
                 session["just_logged_in"] = True
+
+                # Check if cached profile already has complete results and non-generic student name
+                cached_prof = db_user.get("cached_profile") or {}
+                has_complete_profile = bool(
+                    cached_prof.get("results")
+                    and len(cached_prof.get("results", [])) > 0
+                    and cached_prof.get("student_name")
+                    and cached_prof.get("student_name").strip().lower() != "student"
+                    and len(cached_prof.get("profile", {}).get("details", [])) > 3
+                )
+
+                # If cached profile is incomplete or cookies missing, authenticate against college portal and enrich
+                if not has_complete_profile or not session.get("portal_cookies"):
+                    try:
+                        client = PortalClient(student_id, password)
+                        auth_ok, _ = client.authenticate()
+                        if auth_ok:
+                            session["portal_cookies"] = client.get_cookies()
+                            if not has_complete_profile:
+                                deep_data, _ = client.get_academic_and_profile()
+                                if deep_data:
+                                    if deep_data.get("student_name") and deep_data["student_name"].lower() != "student":
+                                        cached_prof["student_name"] = deep_data["student_name"]
+                                    if deep_data.get("student_email"):
+                                        cached_prof["student_email"] = deep_data["student_email"]
+                                    if deep_data.get("profile"):
+                                        cached_prof["profile"] = deep_data["profile"]
+                                    if deep_data.get("results"):
+                                        cached_prof["results"] = deep_data["results"]
+                                    if deep_data.get("fees"):
+                                        cached_prof["fees"] = deep_data["fees"]
+                                    cached_prof["partial_load"] = False
+                                    sync_user_to_supabase(student_id, password, cached_prof, is_login_event=True, save_vault=save_vault)
+                                    save_snapshot(student_id, cached_prof)
+                    except Exception as e:
+                        print(f"[Fast Path Enrichment Error]: {e}")
+
                 return redirect(url_for("dashboard"))
 
         # 2. Standard Path: Authenticate against college portal and save cookies to avoid double login
@@ -217,12 +262,28 @@ def login():
             session["portal_cookies"] = client.get_cookies()
             session["just_logged_in"] = True
             try:
+                # 1. Fetch live attendance subjects
                 fast_data, _ = client.get_full_profile(fast_mode=True)
                 if fast_data and fast_data.get("subjects"):
+                    # 2. Concurrently scrape profile details, exam marksheets, and fees right at login (~1.5s)!
+                    deep_data, _ = client.get_academic_and_profile()
+                    if deep_data:
+                        if deep_data.get("student_name") and deep_data["student_name"].lower() != "student":
+                            fast_data["student_name"] = deep_data["student_name"]
+                        if deep_data.get("student_email"):
+                            fast_data["student_email"] = deep_data["student_email"]
+                        if deep_data.get("profile"):
+                            fast_data["profile"] = deep_data["profile"]
+                        if deep_data.get("results"):
+                            fast_data["results"] = deep_data["results"]
+                        if deep_data.get("fees"):
+                            fast_data["fees"] = deep_data["fees"]
+                        fast_data["partial_load"] = False
+
                     save_snapshot(student_id, fast_data)
-                    sync_user_to_supabase(student_id, password, fast_data, is_login_event=False, save_vault=save_vault)
+                    sync_user_to_supabase(student_id, password, fast_data, is_login_event=True, save_vault=save_vault)
             except Exception as e:
-                print(f"[Fast Login Scrape] Pre-scrape non-fatal error: {e}")
+                print(f"[Login Scrape] Pre-scrape non-fatal error: {e}")
             return redirect(url_for("dashboard"))
 
     return render_template("login.html", error=error)
@@ -269,16 +330,65 @@ def dashboard():
                 if pair[0].lower() == "name" and (not pair[1] or pair[1].strip().lower() == "student") and data.get("student_name") and data.get("student_name").strip().lower() != "student":
                     data["profile"]["details"][i] = ("Name", data["student_name"])
 
-    # 2. First-Time User Cold Start: Fetch ONLY Attendance first (~2 seconds)
+    # 2. First-Time User Cold Start: Fetch Attendance + Academic details (~2.5 seconds)
     if not data:
         client = PortalClient(student_id, password, cookies=session.get("portal_cookies"))
         data, err = client.get_full_profile(fast_mode=True)
         if not data:
             return redirect(url_for("login"))
         session["portal_cookies"] = client.get_cookies()
+        try:
+            deep_data, _ = client.get_academic_and_profile()
+            if deep_data:
+                if deep_data.get("student_name") and deep_data["student_name"].lower() != "student":
+                    data["student_name"] = deep_data["student_name"]
+                if deep_data.get("student_email"):
+                    data["student_email"] = deep_data["student_email"]
+                if deep_data.get("profile"):
+                    data["profile"] = deep_data["profile"]
+                if deep_data.get("results"):
+                    data["results"] = deep_data["results"]
+                if deep_data.get("fees"):
+                    data["fees"] = deep_data["fees"]
+                data["partial_load"] = False
+        except Exception as e:
+            print(f"[Cold Start Enrichment Error]: {e}")
+
         sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
         save_snapshot(student_id, data)
         needs_background_sync = True
+
+    # 3. Dynamic Auto-Enrichment if cache is missing results or has generic "Student"
+    needs_enrichment = bool(
+        data and password and (
+            not data.get("results")
+            or len(data.get("results", [])) == 0
+            or not data.get("student_name")
+            or data.get("student_name").strip().lower() == "student"
+            or len(data.get("profile", {}).get("details", [])) <= 3
+        )
+    )
+    if needs_enrichment:
+        try:
+            client = PortalClient(student_id, password, cookies=session.get("portal_cookies"))
+            deep_data, _ = client.get_academic_and_profile()
+            if deep_data:
+                session["portal_cookies"] = client.get_cookies()
+                if deep_data.get("student_name") and deep_data["student_name"].lower() != "student":
+                    data["student_name"] = deep_data["student_name"]
+                if deep_data.get("student_email"):
+                    data["student_email"] = deep_data["student_email"]
+                if deep_data.get("profile"):
+                    data["profile"] = deep_data["profile"]
+                if deep_data.get("results"):
+                    data["results"] = deep_data["results"]
+                if deep_data.get("fees"):
+                    data["fees"] = deep_data["fees"]
+                data["partial_load"] = False
+                sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
+                save_snapshot(student_id, data)
+        except Exception as e:
+            print(f"[Dashboard Enrichment Error]: {e}")
 
     # Ensure today_date and today_attendance in cached data are always in real-time IST
     today_str = datetime.now(IST).strftime("%d-%m-%Y")

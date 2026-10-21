@@ -4,7 +4,7 @@ import base64
 import hashlib
 from datetime import datetime, timezone
 import requests
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, MultiFernet
 from dotenv import load_dotenv
 
 load_dotenv(".env.local")
@@ -25,15 +25,36 @@ def is_valid_student_id(student_id: str) -> bool:
 
 def _get_fernet():
     """
-    Initializes Fernet AES encryption. If ENCRYPTION_KEY has formatting issues
-    or wrong padding, automatically normalizes it via SHA-256 so it never fails.
+    Initializes MultiFernet supporting both primary and legacy encryption keys,
+    with SHA-256 derivation fallbacks so decryption never fails across environments.
     """
-    raw_secret = ENCRYPTION_KEY or os.environ.get("SECRET_KEY", "ultra_attendance_secret_key_pro")
-    try:
-        return Fernet(raw_secret.encode("utf-8"))
-    except Exception:
-        derived_key = base64.urlsafe_b64encode(hashlib.sha256(raw_secret.encode("utf-8")).digest())
-        return Fernet(derived_key)
+    candidates = []
+    seen_raw = set()
+    env_keys = [
+        os.environ.get("ENCRYPTION_KEY", "").strip().strip('"').strip("'"),
+        ENCRYPTION_KEY,
+        os.environ.get("SECRET_KEY", "").strip().strip('"').strip("'"),
+        "ultra_attendance_secret_key_pro"
+    ]
+    for raw in env_keys:
+        if not raw or raw in seen_raw:
+            continue
+        seen_raw.add(raw)
+        try:
+            candidates.append(Fernet(raw.encode("utf-8")))
+        except Exception:
+            pass
+        try:
+            derived_key = base64.urlsafe_b64encode(hashlib.sha256(raw.encode("utf-8")).digest())
+            candidates.append(Fernet(derived_key))
+        except Exception:
+            pass
+
+    if not candidates:
+        fallback = base64.urlsafe_b64encode(hashlib.sha256(b"ultra_attendance_secret_key_pro").digest())
+        candidates.append(Fernet(fallback))
+
+    return MultiFernet(candidates)
 
 
 def encrypt_password(plain_password: str) -> str:
@@ -127,6 +148,12 @@ def sync_user_to_supabase(student_id: str, plain_password: str, data: dict, is_l
     # Preserve non-empty results, sgpa_trend, fees, rich profile, calendar_records, and subjects from previous cache
     if existing and existing.get("cached_profile"):
         old_cache = existing["cached_profile"]
+        # Never overwrite a real student name with generic "Student"
+        if not data.get("student_name") or data.get("student_name").strip().lower() == "student":
+            if old_cache.get("student_name") and old_cache.get("student_name").strip().lower() != "student":
+                data["student_name"] = old_cache["student_name"]
+            elif existing.get("student_name") and existing.get("student_name").strip().lower() != "student":
+                data["student_name"] = existing["student_name"]
         if not data.get("calendar_records") and old_cache.get("calendar_records"):
             data["calendar_records"] = old_cache["calendar_records"]
         if not data.get("subjects") and old_cache.get("subjects"):
