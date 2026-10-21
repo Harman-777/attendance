@@ -48,12 +48,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getAppVersion() {
-            return "2.5";
+            return "2.6";
         }
 
         @JavascriptInterface
         public int getAppVersionCode() {
-            return 7;
+            return 8;
         }
 
         @JavascriptInterface

@@ -612,6 +612,137 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // Dynamic Results & Marksheets Tab Renderer (Updates DOM without full reload)
+    window.renderResultsTabDynamically = function (results) {
+        if (!results || results.length === 0) return;
+
+        // 1. Re-render SGPA Trend Card
+        const sgpaCard = document.getElementById("sgpa-trend-card");
+        if (sgpaCard) {
+            let chartHtml = `
+                <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">📈 Semester SGPA Performance Trend</h3>
+                <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 12px;">Automated grade-point progression across published semesters</p>
+                <div class="chart-row">
+            `;
+            let reappearCount = 0;
+            let reappearDetails = [];
+
+            results.forEach(function (sem) {
+                const isRa = Boolean(sem.has_reappear);
+                if (isRa) {
+                    reappearCount++;
+                    reappearDetails.push({ sem: sem.semester, subs: sem.reappear_subjects || [] });
+                    chartHtml += `
+                        <div class="chart-bar-wrap">
+                            <span style="font-size: 0.74rem; font-weight: 800; color: #fb7185; margin-bottom: 6px; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); padding: 2px 6px; border-radius: 6px;">
+                                ⚠️ RA (${sem.sgpa > 0 ? sem.sgpa : 'Backlog'})
+                            </span>
+                            <div class="chart-bar" data-sgpa="${sem.sgpa}" style="background: linear-gradient(180deg, #f43f5e 0%, #e11d48 100%) !important; border: 1px solid #fda4af;"></div>
+                            <span style="font-size: 0.78rem; color: #9ca3af; margin-top: 8px;">${sem.semester}</span>
+                        </div>
+                    `;
+                } else {
+                    chartHtml += `
+                        <div class="chart-bar-wrap">
+                            <span style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">${sem.sgpa > 0 ? sem.sgpa : 'N/A'}</span>
+                            <div class="chart-bar" data-sgpa="${sem.sgpa}"></div>
+                            <span style="font-size: 0.78rem; color: #9ca3af; margin-top: 8px;">${sem.semester}</span>
+                        </div>
+                    `;
+                }
+            });
+
+            chartHtml += `</div>`;
+
+            if (reappearCount > 0) {
+                chartHtml += `
+                    <div style="margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.85rem;">
+                        <div style="font-weight: 700; color: #f87171; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                            <span>⚠️</span> Active Re-appear / Backlog Notice
+                        </div>
+                `;
+                reappearDetails.forEach(function (rd) {
+                    const subText = rd.subs && rd.subs.length > 0 ? rd.subs.join(", ") : "Pending re-examination required";
+                    chartHtml += `
+                        <div style="color: #cbd5e1; margin-bottom: 4px;">
+                            <b style="color: #fca5a5;">${rd.sem}:</b> Re-appear in <span style="color: #f87171; font-weight: 600;">${subText}</span>
+                        </div>
+                    `;
+                });
+                chartHtml += `</div>`;
+            } else {
+                chartHtml += `
+                    <div style="margin-top: 18px; padding: 10px 14px; border-radius: 10px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); font-size: 0.82rem; color: #86efac; display: flex; align-items: center; gap: 8px;">
+                        <span>✔</span> <b>Academic Record Cleared:</b> All published semesters cleared with zero backlogs!
+                    </div>
+                `;
+            }
+
+            sgpaCard.innerHTML = chartHtml;
+
+            // Animate bar heights
+            sgpaCard.querySelectorAll(".chart-bar").forEach(function (bar) {
+                const sgpa = parseFloat(bar.getAttribute("data-sgpa")) || 0;
+                const heightPct = sgpa > 0 ? Math.min((sgpa / 10.0) * 100, 100) : 15;
+                bar.style.height = heightPct + "%";
+            });
+        }
+
+        // 2. Re-render Marksheets Section
+        const msSection = document.getElementById("marksheets-section");
+        if (msSection) {
+            let msHtml = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+                    <h2 style="font-size: 1.3rem;">Official Semester Marksheets</h2>
+                    <div>
+                        <label style="color: #9ca3af; margin-right: 10px; font-weight: 600;">Select Semester:</label>
+                        <select class="sem-dropdown" id="sem-select">
+            `;
+            results.forEach(function (sem, idx) {
+                const isLast = (idx === results.length - 1);
+                msHtml += `<option value="sem-${sem.code}" ${isLast ? 'selected' : ''}>${sem.semester}</option>`;
+            });
+            msHtml += `</select></div></div>`;
+
+            results.forEach(function (sem, idx) {
+                const isLast = (idx === results.length - 1);
+                msHtml += `<div id="sem-${sem.code}" class="sem-block ${isLast ? 'active' : ''}">`;
+                msHtml += `<h3 style="color: #38bdf8; margin-bottom: 12px; font-size: 1.12rem;">${sem.semester} Marksheet</h3>`;
+                if (sem.tables && sem.tables.length > 0) {
+                    sem.tables.forEach(function (table) {
+                        msHtml += `<div class="table-responsive" style="margin-bottom: 24px;"><table>`;
+                        table.forEach(function (row, rIdx) {
+                            msHtml += `<tr>`;
+                            row.forEach(function (cell) {
+                                if (rIdx === 0) msHtml += `<th>${cell}</th>`;
+                                else msHtml += `<td>${cell}</td>`;
+                            });
+                            msHtml += `</tr>`;
+                        });
+                        msHtml += `</table></div>`;
+                    });
+                } else {
+                    msHtml += `<div class="card" style="text-align: center; color: #9ca3af;">No published mark records found for ${sem.semester}.</div>`;
+                }
+                msHtml += `</div>`;
+            });
+
+            msSection.innerHTML = msHtml;
+
+            // Re-bind sem-select
+            const newSemSelect = document.getElementById("sem-select");
+            if (newSemSelect) {
+                newSemSelect.addEventListener("change", function () {
+                    document.querySelectorAll(".sem-block").forEach(function (blk) {
+                        blk.classList.remove("active");
+                    });
+                    const chosen = document.getElementById(newSemSelect.value);
+                    if (chosen) chosen.classList.add("active");
+                });
+            }
+        }
+    };
+
     // 11. Two-Stage Real-Time Live Attendance Sync (<1.8s DOM Updates, Auto-Focus, Manual Button)
     window.triggerRealtimeAttendanceSync = function (isManual) {
         const syncPill = document.getElementById("sync-status-pill") || document.querySelector(".sync-pill");
@@ -801,9 +932,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
 
-            // 7. Silent Stage 2 Deep Sync (Only if student has empty Results/SGPA)
-            const hadNoResults = (!portalData.results || portalData.results.length === 0);
-            if (hadNoResults && !window._hasFiredDeepSync) {
+            // 7. Dynamic Stage 2 Deep Sync (Triggers if name is "Student", profile details <= 4, or results are empty)
+            const needsNameRefresh = (!portalData.student_name || portalData.student_name.toLowerCase() === "student");
+            const needsProfileRefresh = (!portalData.profile || !portalData.profile.details || portalData.profile.details.length <= 4);
+            const needsResultsRefresh = (!portalData.results || portalData.results.length === 0);
+
+            if ((needsNameRefresh || needsProfileRefresh || needsResultsRefresh) && !window._hasFiredDeepSync) {
                 window._hasFiredDeepSync = true;
                 fetch("/api/background-sync", {
                     method: "POST",
@@ -812,13 +946,56 @@ document.addEventListener("DOMContentLoaded", function () {
                 })
                 .then(function (dr) { return dr.json(); })
                 .then(function (deepRes) {
-                    if (deepRes.ok && deepRes.results && deepRes.results.length > 0) {
-                        portalData.results = deepRes.results;
-                        portalData.sgpa_trend = deepRes.sgpa_trend;
-                        portalData.fees = deepRes.fees;
+                    if (!deepRes.ok) return;
+
+                    // A. Dynamically update student name in header, sidebar & profile
+                    if (deepRes.student_name && deepRes.student_name.toLowerCase() !== "student") {
+                        portalData.student_name = deepRes.student_name;
+                        const mobileSub = document.querySelector(".mobile-student-sub");
+                        if (mobileSub) {
+                            mobileSub.textContent = deepRes.student_name + " • " + (portalData.student_id || "");
+                        }
+                        const heroName = document.getElementById("profile-hero-name") || document.querySelector(".profile-name");
+                        if (heroName) {
+                            heroName.textContent = deepRes.student_name;
+                        }
+                        document.querySelectorAll(".student-name, .user-name, #sidebar-student-name").forEach(function (el) {
+                            el.textContent = deepRes.student_name;
+                        });
+                    }
+
+                    // B. Dynamically update Profile tab (#tab-profile)
+                    if (deepRes.profile && deepRes.profile.details && deepRes.profile.details.length > 0) {
                         portalData.profile = deepRes.profile;
-                        if (typeof renderResults === "function") {
-                            renderResults();
+                        if (deepRes.profile.photo_url) {
+                            const avatarEl = document.getElementById("profile-avatar-container") || document.querySelector(".profile-avatar");
+                            if (avatarEl) {
+                                avatarEl.innerHTML = `<img src="${deepRes.profile.photo_url}" alt="Student" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                            }
+                        }
+                        const gridEl = document.getElementById("profile-grid-container") || document.querySelector(".profile-grid");
+                        if (gridEl) {
+                            let profHtml = "";
+                            deepRes.profile.details.forEach(function (pair) {
+                                profHtml += `
+                                    <div class="profile-item">
+                                        <div class="profile-label">${pair[0]}</div>
+                                        <div class="profile-val">${pair[1]}</div>
+                                    </div>
+                                `;
+                            });
+                            gridEl.innerHTML = profHtml;
+                        }
+                    }
+
+                    // C. Dynamically update Results tab (#tab-results)
+                    if (deepRes.results && deepRes.results.length > 0) {
+                        portalData.results = deepRes.results;
+                        if (deepRes.sgpa_trend) portalData.sgpa_trend = deepRes.sgpa_trend;
+                        if (deepRes.fees) portalData.fees = deepRes.fees;
+
+                        if (typeof window.renderResultsTabDynamically === "function") {
+                            window.renderResultsTabDynamically(deepRes.results);
                         }
                     }
                 })

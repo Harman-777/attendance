@@ -1,4 +1,5 @@
 import re
+import base64
 from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin
@@ -11,6 +12,44 @@ IST = timezone(timedelta(hours=5, minutes=30))
 LOGIN_URL = "https://agclms.in/Elogin/StudentLogin"
 DASHBOARD_URL = "https://agclms.in/DashBoardStudent"
 RESULTS_URL = "https://agclms.in/DashBoardStudent/Results"
+
+
+def extract_student_name(dash_soup, fallback="Student"):
+    """
+    Bulletproof student name extraction matching the agclms.in header
+    (e.g., `<span class="fs-4 ms-2">HARMAN</span>` right before `Role: STUDENT`).
+    """
+    if not dash_soup:
+        return fallback
+    txt_all = dash_soup.get_text(" ", strip=True)
+
+    # 1. Look for specific tag near Role: STUDENT
+    role_tag = dash_soup.find(string=re.compile(r"Role\s*:\s*STUDENT", re.I))
+    if role_tag:
+        parent = role_tag.find_parent(["div", "li", "header", "nav", "span"])
+        if parent:
+            for s in parent.find_all(["span", "h1", "h2", "h3", "h4", "h5", "h6", "b", "strong"]):
+                txt = s.get_text(strip=True)
+                if txt and not re.search(r"Role|STUDENT|Feedback|Logout|Change\s*Password|AGC|ERP", txt, re.I):
+                    if len(txt) <= 40 and re.search(r"^[A-Za-z\s\.]+$", txt):
+                        return txt.strip().title()
+
+    # 2. Regex matching the name immediately preceding Role: STUDENT
+    m = re.search(r"([A-Za-z][A-Za-z\s\.]{1,40}?)\s*Role\s*:\s*STUDENT", txt_all, re.I)
+    if m:
+        cand = m.group(1).strip()
+        cand = re.sub(r"^(?:AGC\s*ERP|AGC|ERP|Home|Dashboard|Portal|Feedback|Welcome|Logout|-|\s)+", "", cand, flags=re.I).strip()
+        if cand and len(cand) >= 2:
+            return cand.title()
+
+    # 3. Welcome ... regex fallback
+    wm = re.search(r"Welcome\s+([A-Za-z\s]+?)(?:\||Student|Roll|Incharge|$)", txt_all, re.I)
+    if wm:
+        cand = wm.group(1).strip()
+        if cand:
+            return cand.title()
+
+    return fallback
 
 
 class PortalClient:
@@ -157,25 +196,23 @@ class PortalClient:
 
     def get_student_profile(self, dash_soup):
         try:
-            candidate_urls = []
+            candidate_urls = [
+                "https://agclms.in/DashBoardStudent/Detail",
+                "https://agclms.in/DashBoardStudent/StudentProfile",
+                "https://agclms.in/DashBoardStudent/Profile"
+            ]
             if dash_soup:
                 for a in dash_soup.find_all("a"):
                     txt = a.get_text(" ", strip=True).lower()
                     href = a.get("href", "")
                     onclick = a.get("onclick", "")
-                    if any(k in txt for k in ["profile", "bio", "student info", "personal", "details"]) or any(k in href.lower() for k in ["profile", "studentinfo", "biodata"]):
+                    if any(k in txt for k in ["profile", "bio", "student info", "personal", "detail"]) or any(k in href.lower() for k in ["detail", "profile", "studentinfo", "biodata"]):
                         if href and not href.startswith("#") and not href.startswith("javascript"):
-                            candidate_urls.append(urljoin(DASHBOARD_URL + "/", href))
+                            candidate_urls.insert(0, urljoin(DASHBOARD_URL + "/", href))
                         elif onclick:
-                            m = re.search(r"['\"]([^'\"]*profile[^'\"]*)['\"]", onclick, re.I)
+                            m = re.search(r"['\"]([^'\"]*(?:profile|detail)[^'\"]*)['\"]", onclick, re.I)
                             if m:
-                                candidate_urls.append(urljoin(DASHBOARD_URL + "/", m.group(1)))
-
-            # Keep only the primary official profile fallback endpoints (prevent 10s serverless timeout)
-            candidate_urls.extend([
-                "https://agclms.in/DashBoardStudent/StudentProfile",
-                "https://agclms.in/DashBoardStudent/Profile"
-            ])
+                                candidate_urls.insert(0, urljoin(DASHBOARD_URL + "/", m.group(1)))
 
             # Deduplicate URLs maintaining order
             seen_urls = set()
@@ -189,9 +226,9 @@ class PortalClient:
             active_url = DASHBOARD_URL
             for url in clean_candidates:
                 try:
-                    r = self.session.get(url, timeout=4)
+                    r = self.session.get(url, timeout=5)
                     if r.status_code == 200 and "StudentLogin" not in r.url and len(r.text) > 400:
-                        if any(k in r.text for k in ["Roll", "Student", "Class", "Course", "Father", "Mother", "Batch", "Mobile", "Email", "Enrollment"]):
+                        if any(k in r.text for k in ["Roll", "Student", "Class", "Course", "Father", "Mother", "Batch", "Mobile", "Email", "Enrollment", "Detail"]):
                             p_soup = BeautifulSoup(r.text, "html.parser")
                             active_url = url
                             break
@@ -202,63 +239,78 @@ class PortalClient:
             details = []
 
             if p_soup:
-                for img in p_soup.find_all("img"):
-                    src = img.get("src", "")
-                    if src and not any(ig in src.lower() for ig in ["logo", "naac", "banner", "icon", "footer", "header"]):
-                        photo_url = urljoin(active_url, src)
-                        break
+                # 1. Parse div.row key-value pairs (left column has <b>)
+                for r in p_soup.find_all("div", class_="row"):
+                    b = r.find("b")
+                    if b:
+                        lbl = b.get_text(strip=True).rstrip(":")
+                        right = r.find("div", class_=re.compile(r"col-md-7|col-sm-7|col-7"))
+                        val = right.get_text(" ", strip=True) if right else r.get_text(" ", strip=True).replace(b.get_text(strip=True), "").strip()
+                        val = re.sub(r"\s+", " ", val).strip()
+                        if lbl and val and lbl.lower() not in [d[0].lower() for d in details]:
+                            details.append((lbl, val))
 
-                known_labels = [
-                    "Name", "Student Id", "Email Id", "Mobile No",
-                    "Batch", "Class Name", "University Rollno",
-                    "Father Name", "Mother Name", "Date of Birth",
-                    "Aadhaar No", "Address", "City", "State", "Country"
-                ]
+                # 2. Parse <dl class="row"> with <dt> and <dd>
+                dts = p_soup.find_all("dt")
+                dds = p_soup.find_all("dd")
+                for dt, dd in zip(dts, dds):
+                    lbl = dt.get_text(strip=True).rstrip(":")
+                    val = re.sub(r"\s+", " ", dd.get_text(" ", strip=True)).strip()
+                    if lbl and val and lbl.lower() not in [d[0].lower() for d in details]:
+                        details.append((lbl, val))
 
+                # 3. Parse table rows <tr>
                 for tr in p_soup.find_all("tr"):
                     cells = [td.get_text(" ", strip=True) for td in tr.find_all(["th", "td"]) if td.get_text(strip=True)]
                     if len(cells) == 2:
-                        details.append((cells[0].rstrip(":").strip(), cells[1].strip()))
+                        k = cells[0].rstrip(":").strip()
+                        v = cells[1].strip()
+                        if k and v and k.lower() not in [d[0].lower() for d in details]:
+                            details.append((k, v))
                     elif len(cells) >= 4:
-                        details.append((cells[0].rstrip(":").strip(), cells[1].strip()))
-                        details.append((cells[2].rstrip(":").strip(), cells[3].strip()))
+                        k1, v1 = cells[0].rstrip(":").strip(), cells[1].strip()
+                        k2, v2 = cells[2].rstrip(":").strip(), cells[3].strip()
+                        if k1 and v1 and k1.lower() not in [d[0].lower() for d in details]:
+                            details.append((k1, v1))
+                        if k2 and v2 and k2.lower() not in [d[0].lower() for d in details]:
+                            details.append((k2, v2))
 
-                if len(details) < 4:
-                    strings = [s.strip().rstrip(":") for s in p_soup.stripped_strings if s.strip() and s.strip() != ":"]
-                    lower_known = {k.lower(): k for k in known_labels}
-
-                    for i, s in enumerate(strings):
-                        if s.lower() in lower_known and i + 1 < len(strings):
-                            nxt = strings[i + 1]
-                            if nxt.lower() not in lower_known:
-                                details.append((lower_known[s.lower()], nxt))
-
-                    if len(details) < 4:
-                        for group in [
-                            ["Name", "Student Id", "Email Id", "Mobile No"],
-                            ["Batch", "Class Name", "University Rollno", "Father Name", "Mother Name", "Date of Birth", "Aadhaar No", "Address", "City", "State", "Country"]
-                        ]:
-                            indices = []
-                            for lbl in group:
-                                for idx, text_item in enumerate(strings):
-                                    if text_item.lower() == lbl.lower():
-                                        indices.append(idx)
-                                        break
-                            if len(indices) >= 3 and indices == sorted(indices):
-                                last_lbl_idx = indices[-1]
-                                count = len(indices)
-                                values = strings[last_lbl_idx + 1 : last_lbl_idx + 1 + count]
-                                for lbl_idx, val in zip(indices, values):
-                                    details.append((strings[lbl_idx], val))
+                # 4. Extract student photo if genuine (ignoring logos, default user icons, navbars)
+                for img in p_soup.find_all("img"):
+                    src = img.get("src", "")
+                    if not src:
+                        continue
+                    is_ignore = any(ig in src.lower() for ig in ["logo", "naac", "banner", "icon", "footer", "agc-amritsar", "dummy", "avatar", "default"]) or any(p.name in ["header", "nav"] for p in img.parents)
+                    if not is_ignore:
+                        img_full_url = urljoin(active_url, src)
+                        try:
+                            img_res = self.session.get(img_full_url, timeout=6)
+                            if img_res.status_code == 200 and len(img_res.content) > 300:
+                                ctype = img_res.headers.get("Content-Type") or "image/jpeg"
+                                if "image" not in ctype:
+                                    ctype = "image/jpeg"
+                                b64_bytes = base64.b64encode(img_res.content).decode("ascii")
+                                photo_url = f"data:{ctype};base64,{b64_bytes}"
+                                break
+                        except Exception:
+                            continue
 
             # Robust Dashboard Fallback: ensure core fields are always populated for every student
-            dash_text = dash_soup.get_text(" ", strip=True)
+            dash_text = dash_soup.get_text(" ", strip=True) if dash_soup else ""
             existing_keys = {k.lower() for k, v in details}
 
-            if "name" not in existing_keys:
-                name_match = re.search(r"Welcome\s+([A-Za-z\s]+?)(?:\||Student|Roll|Incharge|$)", dash_text, re.I)
-                if name_match:
-                    details.insert(0, ("Name", name_match.group(1).strip()))
+            # Extract student name
+            student_name_found = None
+            for k, v in details:
+                if k.lower() == "name" and v and v.strip() and v.strip().lower() != "student":
+                    student_name_found = v.strip().title()
+                    break
+
+            if not student_name_found and dash_soup:
+                student_name_found = extract_student_name(dash_soup, fallback="")
+
+            if not student_name_found:
+                student_name_found = str(self.student_id)
 
             if "student id" not in existing_keys and "university rollno" not in existing_keys:
                 details.append(("Student Id", str(self.student_id)))
@@ -285,25 +337,28 @@ class PortalClient:
                     seen.add(k_clean.lower())
                     unique_details.append((k_clean, v_clean))
 
+            # Ensure ("Name", student_name_found) is always first
+            unique_details = [d for d in unique_details if d[0].lower() != "name"]
+            unique_details.insert(0, ("Name", student_name_found))
+
             return {"photo_url": photo_url, "details": unique_details}
         except Exception:
-            return {"photo_url": None, "details": [("Student Id", str(self.student_id))]}
+            std_name = extract_student_name(dash_soup, fallback=str(self.student_id)) if dash_soup else str(self.student_id)
+            return {"photo_url": None, "details": [("Name", std_name), ("Student Id", str(self.student_id))]}
 
     def get_exam_results(self, dash_soup=None):
         try:
-            candidate_urls = []
+            candidate_urls = [
+                RESULTS_URL,
+                "https://agclms.in/DashBoardStudent/Results"
+            ]
             if dash_soup:
                 for a in dash_soup.find_all("a"):
                     txt = a.get_text(" ", strip=True).lower()
                     href = a.get("href", "")
                     if any(k in txt or k in href.lower() for k in ["result", "marksheet", "grade", "marks", "exam"]):
                         if href and not href.startswith("#") and not href.startswith("javascript"):
-                            candidate_urls.append(urljoin(DASHBOARD_URL + "/", href))
-
-            candidate_urls.extend([
-                RESULTS_URL,
-                "https://agclms.in/DashBoardStudent/Results"
-            ])
+                            candidate_urls.insert(0, urljoin(DASHBOARD_URL + "/", href))
 
             seen_r_urls = set()
             clean_candidates = []
@@ -316,7 +371,7 @@ class PortalClient:
             active_results_url = RESULTS_URL
             for url in clean_candidates:
                 try:
-                    r = self.session.get(url, timeout=4)
+                    r = self.session.get(url, timeout=5)
                     if r.status_code == 200 and "StudentLogin" not in r.url and len(r.text) > 400:
                         s = BeautifulSoup(r.text, "html.parser")
                         select = s.find("select", {"name": re.compile(r"ClassCode|Semester|Sem|Course", re.I)}) or s.find("select")
@@ -340,20 +395,36 @@ class PortalClient:
             for opt in select.find_all("option"):
                 val = opt.get("value", "").strip()
                 label = opt.get_text(strip=True)
-                if val and val != "-1":
+                if val and val not in ("-1", "0", "") and not label.lower().startswith("select"):
                     options.append((val, label))
 
-            grade_points = {"O": 10, "A+": 9, "A": 8, "B+": 7, "B": 6, "C": 5, "P": 4, "F": 0, "E": 0, "I": 0}
+            grade_points = {"O": 10, "A+": 9, "A": 8, "B+": 7, "B": 6, "C": 5, "P": 4, "F": 0, "NAF": 0, "NAF(EXT)": 0, "AB": 0, "E": 0, "I": 0}
 
             def fetch_single_sem(item):
                 code, sem_name = item
                 sem_url = f"{active_results_url}?{param_name}={code}"
-                r = self.session.get(sem_url, timeout=5)
+                try:
+                    r = self.session.get(sem_url, timeout=6)
+                except Exception:
+                    return {
+                        "code": code,
+                        "semester": sem_name,
+                        "tables": [],
+                        "sgpa": 0.0,
+                        "has_reappear": False,
+                        "reappear_subjects": [],
+                        "status": "UNAVAILABLE"
+                    }
+
                 s = BeautifulSoup(r.text, "html.parser")
                 tables = []
                 extracted_grades = []
+                weighted_points = 0.0
+                total_credits = 0.0
                 has_reappear = False
                 reappear_subjects = []
+                portal_sgpa = None
+                portal_status = None
 
                 for table in s.find_all("table"):
                     rows = []
@@ -361,41 +432,69 @@ class PortalClient:
                         cols = [td.get_text(strip=True) for td in tr.find_all(["th", "td"])]
                         if cols:
                             rows.append(cols)
-                            # Check for individual subject grades
-                            for cell in cols:
-                                cell_up = cell.upper()
-                                if cell_up in grade_points:
-                                    extracted_grades.append(grade_points[cell_up])
+                            row_str = " ".join(cols)
 
-                            # Detect Re-appear / Compartment / Backlog in subject row
-                            row_str = " ".join(cols).upper()
-                            is_reappear = (
-                                any(re.search(rf"\b{re.escape(k)}\b", row_str) for k in ["REAPPEAR", "RE-APPEAR", "FAIL", "COMPARTMENT", "BACKLOG"])
-                                or any(c.upper() in ["F", "RA", "AB"] for c in cols)
-                            )
-                            if is_reappear:
-                                has_reappear = True
-                                subj = cols[1] if len(cols) > 1 and not cols[1].isdigit() else (cols[2] if len(cols) > 2 else (cols[0] if cols else "Subject"))
-                                if subj and not any(h in subj.lower() for h in ["subject", "course", "paper", "s.no"]):
-                                    reappear_subjects.append(subj)
+                            sgpa_m = re.search(r"SGPA\s*[:\|]?\s*([0-9\.]+)", row_str, re.I)
+                            if sgpa_m:
+                                try:
+                                    portal_sgpa = float(sgpa_m.group(1))
+                                except Exception:
+                                    pass
+
+                            status_m = re.search(r"Result\s*Status\s*[:\|]?\s*([A-Za-z\s\-]+)", row_str, re.I)
+                            if status_m:
+                                portal_status = status_m.group(1).strip()
+                                if any(k in portal_status.lower() for k in ["re-appear", "reappear", "fail", "compartment", "backlog"]):
+                                    has_reappear = True
+
+                            # Detect subject row: usually starts with digit S.No and has >= 4 columns
+                            if len(cols) >= 4 and cols[0].isdigit():
+                                subj_name = cols[1]
+                                creds = 1.0
+                                grade_col = cols[-1]
+                                for c in cols[2:]:
+                                    try:
+                                        creds = float(c)
+                                        break
+                                    except Exception:
+                                        pass
+
+                                grade_clean = grade_col.split("(")[0].strip().upper()
+                                pt = grade_points.get(grade_clean, None)
+                                if pt is not None:
+                                    weighted_points += creds * pt
+                                    total_credits += creds
+                                    extracted_grades.append(pt)
+                                    if pt == 0 or any(k in grade_col.upper() for k in ["F", "RA", "NAF", "AB"]):
+                                        has_reappear = True
+                                        reappear_subjects.append(subj_name)
+                            else:
+                                for c in cols:
+                                    c_up = c.upper()
+                                    if c_up in grade_points:
+                                        extracted_grades.append(grade_points[c_up])
+                                row_up = row_str.upper()
+                                if any(re.search(rf"\b{re.escape(k)}\b", row_up) for k in ["REAPPEAR", "RE-APPEAR", "FAIL", "COMPARTMENT", "BACKLOG"]):
+                                    has_reappear = True
 
                     if rows:
                         tables.append(rows)
 
-                sgpa = round(sum(extracted_grades) / len(extracted_grades), 2) if extracted_grades else 0.0
-                status = "RE-APPEAR" if has_reappear else ("PASSED" if sgpa > 0 else "PUBLISHED")
+                calc_sgpa = round(weighted_points / total_credits, 2) if total_credits > 0 else (round(sum(extracted_grades) / len(extracted_grades), 2) if extracted_grades else 0.0)
+                final_sgpa = portal_sgpa if (portal_sgpa is not None and portal_sgpa > 0) else calc_sgpa
+                status = "RE-APPEAR" if has_reappear else ("PASSED" if (portal_status == "Pass" or final_sgpa > 0) else "PUBLISHED")
 
                 return {
                     "code": code,
                     "semester": sem_name,
                     "tables": tables,
-                    "sgpa": sgpa,
+                    "sgpa": final_sgpa,
                     "has_reappear": has_reappear,
                     "reappear_subjects": list(dict.fromkeys(reappear_subjects)),
                     "status": status
                 }
 
-            with ThreadPoolExecutor(max_workers=5) as executor:
+            with ThreadPoolExecutor(max_workers=6) as executor:
                 return list(executor.map(fetch_single_sem, options))
         except Exception:
             return []
@@ -688,10 +787,14 @@ class PortalClient:
 
         student_email = ""
         for k, v in profile_data.get("details", []):
-            if k.lower() == "name" and v:
-                student_name = v
+            if k.lower() == "name" and v and v.strip() and v.strip().lower() != "student":
+                student_name = v.strip().title()
             elif "email" in k.lower() and v:
-                student_email = v
+                student_email = v.strip()
+
+        # Ensure ("Name", student_name) is always at index 0 of profile details
+        profile_data["details"] = [d for d in profile_data.get("details", []) if d[0].lower() != "name"]
+        profile_data["details"].insert(0, ("Name", student_name))
 
         return {
             "student_id": self.student_id,

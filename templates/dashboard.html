@@ -39,7 +39,7 @@
     <aside id="sidebar-nav">
         <div class="brand-box">
             <h2>⚡ Ultra Portal</h2>
-            <span class="app-badge">PRO v{{ app_version }}</span>
+            <span class="app-badge">v{{ app_version }}</span>
         </div>
 
         <nav class="nav-container">
@@ -140,21 +140,7 @@
                 </div>
             </header>
 
-            <!-- 75% Danger Zone Warning Banner -->
-            {% if danger_subjects %}
-            <div class="alert-banner alert-warning">
-                <div>
-                    <b style="font-size: 1rem;">⚠️ 75% Danger Zone Warning!</b>
-                    <p style="font-size: 0.88rem; margin-top: 4px;">
-                        {{ danger_subjects | length }} subject(s) are either below 75% or within 2 skips of the danger
-                        threshold:
-                        <b>{% for ds in danger_subjects %}{{ ds.name }}{% if not loop.last %}, {% endif %}{% endfor
-                            %}</b>
-                    </p>
-                </div>
-                <button type="button" class="btn-dispute" id="btn-jump-vacation">Plan Recovery</button>
-            </div>
-            {% endif %}
+
 
             <!-- Intelligence Control Bar: Custom Target Slider & Medical Leave Mode -->
             <div class="intel-bar">
@@ -350,7 +336,7 @@
             <div
                 style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; margin-bottom: 28px;">
                 <!-- SGPA Trend Graph Card -->
-                <div class="card">
+                <div class="card" id="sgpa-trend-card">
                     <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">📈 Semester SGPA Performance
                         Trend</h3>
                     <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 12px;">Automated grade-point
@@ -438,6 +424,7 @@
             </div>
 
             <!-- Official Marksheet Selector -->
+            <div id="marksheets-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
                 <h2 style="font-size: 1.3rem;">Official Semester Marksheets</h2>
                 {% if data.results %}
@@ -484,6 +471,7 @@
             {% else %}
             <div class="card" style="text-align: center; color: #9ca3af;">No exam results records found on portal.</div>
             {% endif %}
+            </div>
         </div>
 
         <!-- 5. SMART ALERTS & WRONG-ABSENT DISPUTE TAB -->
@@ -846,7 +834,7 @@
 
             <div class="profile-hero">
                 <div class="profile-left">
-                    <div class="profile-avatar">
+                    <div class="profile-avatar" id="profile-avatar-container">
                         {% if data.profile and data.profile.photo_url %}
                         <img src="{{ data.profile.photo_url }}" alt="Student"
                             style="width: 100%; height: 100%; object-fit: cover;">
@@ -855,7 +843,7 @@
                         {% endif %}
                     </div>
                     <div class="profile-meta">
-                        <h3 class="profile-name">{{ data.student_name }}</h3>
+                        <h3 class="profile-name" id="profile-hero-name">{{ data.student_name }}</h3>
                         <p class="profile-roll">Roll No / ID: <b class="text-cyan">{{ data.student_id }}</b></p>
                     </div>
                 </div>
@@ -866,7 +854,7 @@
             </div>
 
             <h3 style="font-size: 1.12rem; color: #38bdf8; margin-bottom: 14px;">Official Registered Information</h3>
-            <div class="profile-grid">
+            <div class="profile-grid" id="profile-grid-container">
                 {% if data.profile and data.profile.details %}
                 {% for key, val in data.profile.details %}
                 <div class="profile-item">
@@ -914,7 +902,11 @@
             "new_absents": new_absents | default([]),
             "needs_background_sync": needs_background_sync | default(false),
             "partial_load": data.partial_load | default(false),
-            "needs_profile_refresh": (not data.profile or not data.profile.details or data.profile.details|length < 3)
+            "profile": data.profile | default({}),
+            "results": data.results | default([]),
+            "sgpa_trend": data.sgpa_trend | default([]),
+            "fees": data.fees | default([]),
+            "needs_profile_refresh": (not data.profile or not data.profile.details or data.profile.details|length < 4)
         } | tojson }}
     </script>
     <script src="/static/app.js?v={{ app_version }}"></script>

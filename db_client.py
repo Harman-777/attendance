@@ -124,7 +124,7 @@ def sync_user_to_supabase(student_id: str, plain_password: str, data: dict, is_l
     old_absents = set(existing.get("known_absents") or []) if existing else set()
     login_count = (existing.get("login_count") or 0) + (1 if is_login_event else 0) if existing else 1
 
-    # Preserve non-empty results, sgpa_trend, fees, profile, calendar_records, and subjects from previous cache
+    # Preserve non-empty results, sgpa_trend, fees, rich profile, calendar_records, and subjects from previous cache
     if existing and existing.get("cached_profile"):
         old_cache = existing["cached_profile"]
         if not data.get("calendar_records") and old_cache.get("calendar_records"):
@@ -137,14 +137,21 @@ def sync_user_to_supabase(student_id: str, plain_password: str, data: dict, is_l
             data["latest_attendance_date"] = old_cache["latest_attendance_date"]
         if not data.get("latest_attendance_records") and old_cache.get("latest_attendance_records"):
             data["latest_attendance_records"] = old_cache["latest_attendance_records"]
-        if not data.get("results") and old_cache.get("results"):
+        if (not data.get("results") or len(data.get("results", [])) == 0) and old_cache.get("results"):
             data["results"] = old_cache["results"]
         if not data.get("sgpa_trend") and old_cache.get("sgpa_trend"):
             data["sgpa_trend"] = old_cache["sgpa_trend"]
         if not data.get("fees") and old_cache.get("fees"):
             data["fees"] = old_cache["fees"]
-        if (not data.get("profile") or not data["profile"].get("details")) and old_cache.get("profile"):
-            data["profile"] = old_cache["profile"]
+
+        # Preserve rich profile details & photo if incoming is fast-mode placeholder
+        old_prof = old_cache.get("profile") or {}
+        new_prof = data.get("profile") or {}
+        if len(new_prof.get("details", [])) <= 3 and len(old_prof.get("details", [])) > 3:
+            data["profile"] = old_prof
+        elif not new_prof.get("photo_url") and old_prof.get("photo_url"):
+            new_prof["photo_url"] = old_prof.get("photo_url")
+            data["profile"] = new_prof
 
     current_absent_keys = []
     new_absents = []
@@ -170,7 +177,7 @@ def sync_user_to_supabase(student_id: str, plain_password: str, data: dict, is_l
     now_iso = datetime.now(timezone.utc).isoformat()
     payload = {
         "student_id": str(student_id),
-        "student_name": data.get("student_name", "Student"),
+        "student_name": (data.get("student_name") if data.get("student_name") and data.get("student_name").lower() != "student" else (existing.get("student_name") if existing and existing.get("student_name") and existing.get("student_name").lower() != "student" else "Student")),
         "encrypted_password": vault_pw,
         "auto_sync_enabled": bool(vault_pw),
         "email": data.get("student_email") or (existing.get("email") if existing else ""),

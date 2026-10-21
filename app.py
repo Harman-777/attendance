@@ -53,8 +53,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "2.5"
-APP_VERSION_CODE = 7
+APP_VERSION = "2.6"
+APP_VERSION_CODE = 8
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -798,13 +798,14 @@ def admin_logout():
 def api_admin_diagnostic_step1():
     import traceback
     try:
-        db_user = get_user_record("2412234")
+        student_id = (request.args.get("student_id") or "2412234").strip()
+        db_user = get_user_record(student_id)
         if not db_user or not db_user.get("encrypted_password"):
-            return jsonify({"ok": False, "error": "User 2412234 or encrypted password not found"}), 404
+            return jsonify({"ok": False, "error": f"User {student_id} or encrypted password not found"}), 404
 
         plain_pw = decrypt_password(db_user["encrypted_password"])
         if not plain_pw:
-            return jsonify({"ok": False, "error": "Could not decrypt password with Vercel key"}), 500
+            return jsonify({"ok": False, "error": f"Could not decrypt password for {student_id}"}), 500
 
         from bs4 import BeautifulSoup
         from urllib.parse import urljoin
@@ -829,14 +830,13 @@ def api_admin_diagnostic_step1():
             t = (inp.get("type") or "text").lower()
             if t == "hidden": payload[name] = inp.get("value", "")
             elif t == "password" or "pass" in name.lower(): payload[name] = plain_pw
-            elif t in ("text", "number", "tel"): payload[name] = "2412234"
+            elif t in ("text", "number", "tel"): payload[name] = student_id
 
         # 2. Post with allow_redirects=False to avoid IIS connection drop on keepalive socket
         r_post = s.post(post_url, data=payload, timeout=12, allow_redirects=False)
         post_loc = r_post.headers.get("Location") or ""
         post_cookies = dict(s.cookies)
         
-        # Test fetching DashBoard with Referer header
         target_dash_url = urljoin("https://agclms.in/Elogin/StudentLogin", post_loc) if post_loc else "https://agclms.in/DashBoardStudent"
         
         s_fresh = requests.Session()
@@ -847,77 +847,214 @@ def api_admin_diagnostic_step1():
         })
         s_fresh.cookies.update(post_cookies)
 
-        dash_error = None
-        try:
-            r_dash = s_fresh.get(target_dash_url, timeout=12)
-        except Exception as de:
-            return jsonify({
-                "ok": False,
-                "stage": "r_dash_failed",
-                "post_status": r_post.status_code,
-                "post_headers": dict(r_post.headers),
-                "post_cookies": post_cookies,
-                "target_dash_url": target_dash_url,
-                "dash_error": str(de)
-            })
+        r_dash = s_fresh.get(target_dash_url, timeout=12)
         dash_soup = BeautifulSoup(r_dash.text, "html.parser")
 
-        attendance_urls = []
-        seen = set()
-        for row in dash_soup.find_all("tr"):
-            link = row.find("a", href=re.compile(r"AttendanceReport", re.I))
-            if link and link.get("href"):
-                u = urljoin("https://agclms.in/DashBoardStudent/", link["href"])
-                if u not in seen:
-                    seen.add(u)
-                    cols = [c.get_text(strip=True) for c in row.find_all(["td", "th"]) if c.get_text(strip=True)]
-                    sub_name = cols[0] if cols else "Subject"
-                    attendance_urls.append({"name": sub_name, "url": u})
+        # 1. Top Header & Name Diagnostic
+        dash_text = dash_soup.get_text(" ", strip=True)
+        role_matches = re.findall(r"([^\.\n\|]{1,50}?Role\s*:\s*[^\.\n\|]{1,30})", dash_text, re.I)
+        all_links = []
+        for a in dash_soup.find_all("a"):
+            txt = a.get_text(strip=True)
+            href = a.get("href", "")
+            if href and not href.startswith("#") and not href.startswith("javascript"):
+                all_links.append({"text": txt, "href": href, "full_url": urljoin(target_dash_url + "/", href)})
 
-        # 4. Scrape first 2 AttendanceReport pages
-        first_two_details = []
-        for item in attendance_urls[:2]:
-            sub_name = item["name"]
-            u = item["url"]
-            r = s.get(u, timeout=10)
-            sub_soup = BeautifulSoup(r.text, "html.parser")
-            oct_rows = []
-            sample_rows = []
-            for row in sub_soup.find_all("tr"):
-                txt = row.get_text(" ", strip=True)
-                if any(w in txt.lower() for w in ["oct", "-10-", "/10/"]):
-                    oct_rows.append(txt)
-                if len(sample_rows) < 3 and ("present" in txt.lower() or "absent" in txt.lower()):
-                    sample_rows.append(txt)
-            first_two_details.append({
-                "subject": sub_name,
-                "url": u,
-                "status_code": r.status_code,
-                "total_rows": len(sub_soup.find_all("tr")),
-                "sample_rows": sample_rows,
-                "october_rows": oct_rows[-10:]
-            })
+        header_snippets = []
+        for tag in dash_soup.find_all(["header", "nav", "div"], class_=re.compile(r"header|navbar|user|profile|top", re.I))[:5]:
+            header_snippets.append(tag.get_text(" ", strip=True)[:150])
 
-        # 5. Also run PortalClient to test get_full_profile
-        client = PortalClient("2412234", plain_pw)
-        profile_fast, p_err = client.get_full_profile(fast_mode=True)
-        if not profile_fast:
-            profile_fast = {}
+        # 2. Profile Page Inspection
+        profile_candidates = [l["full_url"] for l in all_links if any(k in l["text"].lower() or k in l["href"].lower() for k in ["profile", "studentprofile", "biodata"])]
+        if not profile_candidates:
+            profile_candidates = [urljoin(target_dash_url + "/", "StudentProfile"), urljoin(target_dash_url + "/", "Profile")]
+
+        profile_diag = {}
+        for p_url in profile_candidates[:2]:
+            try:
+                r_prof = s_fresh.get(p_url, timeout=8)
+                if r_prof.status_code == 200 and len(r_prof.text) > 300:
+                    p_soup = BeautifulSoup(r_prof.text, "html.parser")
+                    inputs = [{"name": i.get("name"), "value": i.get("value"), "type": i.get("type"), "id": i.get("id")} for i in p_soup.find_all("input") if i.get("value") or i.get("name")]
+                    labels = [l.get_text(strip=True) for l in p_soup.find_all(["label", "th", "dt"])]
+                    images = []
+                    for img in p_soup.find_all("img"):
+                        images.append({
+                            "src": img.get("src"),
+                            "alt": img.get("alt"),
+                            "class": img.get("class"),
+                            "parent": img.parent.name if img.parent else None,
+                            "parent_class": img.parent.get("class") if img.parent else None
+                        })
+                    table_rows = [tr.get_text(" | ", strip=True) for tr in p_soup.find_all("tr")][:15]
+
+                    field_pairs = []
+                    for label in p_soup.find_all("label"):
+                        lbl_text = label.get_text(strip=True)
+                        parent = label.parent
+                        val_cand = ""
+                        inp = parent.find("input") if parent else None
+                        if inp and inp.get("value"):
+                            val_cand = inp.get("value")
+                        else:
+                            next_tag = label.find_next_sibling()
+                            if next_tag:
+                                val_cand = next_tag.get_text(strip=True)
+                            elif parent:
+                                p_inps = parent.find_all("input")
+                                if p_inps:
+                                    val_cand = ", ".join(i.get("value", "") for i in p_inps if i.get("value"))
+                                else:
+                                    texts = [t.strip() for t in parent.find_all(string=True) if t.strip() and t.strip() != lbl_text]
+                                    if texts:
+                                        val_cand = " ".join(texts)
+                        field_pairs.append({"label": lbl_text, "value": val_cand, "parent_html": str(parent)[:200] if parent else ""})
+
+                    profile_diag = {
+                        "url": p_url,
+                        "status_code": r_prof.status_code,
+                        "inputs": inputs,
+                        "labels": labels[:25],
+                        "field_pairs": field_pairs,
+                        "images": images,
+                        "table_rows": table_rows
+                    }
+                    break
+            except Exception as pe:
+                profile_diag = {"url": p_url, "error": str(pe)}
+
+        # 3. Result Page Inspection
+        result_candidates = [l["full_url"] for l in all_links if any(k in l["text"].lower() or k in l["href"].lower() for k in ["result", "marks", "grade", "transcript", "exam"])]
+        if not result_candidates:
+            result_candidates = [urljoin(target_dash_url + "/", "Result"), urljoin(target_dash_url + "/", "Results")]
+
+        result_diag = {}
+        for r_url in result_candidates[:3]:
+            try:
+                r_res = s_fresh.get(r_url, timeout=8)
+                if r_res.status_code == 200 and len(r_res.text) > 300:
+                    r_soup = BeautifulSoup(r_res.text, "html.parser")
+                    forms = []
+                    for f in r_soup.find_all("form"):
+                        forms.append({
+                            "action": f.get("action"),
+                            "method": f.get("method"),
+                            "inputs": [{"name": i.get("name"), "value": i.get("value"), "type": i.get("type")} for i in f.find_all("input")]
+                        })
+                    selects = []
+                    for sel in r_soup.find_all("select"):
+                        selects.append({
+                            "name": sel.get("name"),
+                            "id": sel.get("id"),
+                            "options": [{"value": o.get("value"), "text": o.get_text(strip=True)} for o in sel.find_all("option")]
+                        })
+                    tables_sample = []
+                    for t in r_soup.find_all("table")[:3]:
+                        tables_sample.append([tr.get_text(" | ", strip=True) for tr in t.find_all("tr")[:8]])
+                    scripts_sample = [s.get_text()[:200] for s in r_soup.find_all("script") if "ajax" in s.get_text().lower() or "result" in s.get_text().lower()][:3]
+
+                    sem_fetch_tests = []
+                    if selects and selects[0]["options"]:
+                        sel_name = selects[0]["name"]
+                        form_action = forms[0]["action"] if forms else r_url
+                        post_target = urljoin(r_url, form_action)
+                        for opt in selects[0]["options"][:3]:
+                            v = opt["value"]
+                            if not v or v in ("0", ""): continue
+                            test_payload = {}
+                            if forms:
+                                for inp in forms[0]["inputs"]:
+                                    if inp["name"]: test_payload[inp["name"]] = inp["value"] or ""
+                            test_payload[sel_name] = v
+                            r_post_sem = s_fresh.post(post_target, data=test_payload, timeout=6)
+                            sem_soup = BeautifulSoup(r_post_sem.text, "html.parser")
+                            sem_fetch_tests.append({
+                                "sem": opt["text"],
+                                "val": v,
+                                "method": "POST",
+                                "status": r_post_sem.status_code,
+                                "tables_count": len(sem_soup.find_all("table")),
+                                "sample_row": [tr.get_text(" | ", strip=True) for tr in sem_soup.find_all("tr")[:4]]
+                            })
+
+                    result_diag = {
+                        "url": r_url,
+                        "status_code": r_res.status_code,
+                        "forms": forms,
+                        "selects": selects,
+                        "tables_sample": tables_sample,
+                        "scripts_sample": scripts_sample,
+                        "sem_fetch_tests": sem_fetch_tests
+                    }
+                    break
+            except Exception as re_err:
+                result_diag = {"url": r_url, "error": str(re_err)}
+
+        # Detail / Profile Page Inner HTML inspection
+        prof_debug = {}
+        try:
+            r_prof = s_fresh.get("https://agclms.in/DashBoardStudent/Detail", timeout=8)
+            p_soup = BeautifulSoup(r_prof.text, "html.parser")
+            inputs = [{"name": i.get("name"), "value": i.get("value"), "type": i.get("type"), "id": i.get("id")} for i in p_soup.find_all("input")]
+            labels = [l.get_text(strip=True) for l in p_soup.find_all(["label", "th", "dt"])]
+            images = [{"src": img.get("src"), "alt": img.get("alt"), "class": img.get("class")} for img in p_soup.find_all("img")]
+            table_rows = [tr.get_text(" | ", strip=True) for tr in p_soup.find_all("tr")][:30]
+            prof_debug = {
+                "status": r_prof.status_code,
+                "url": r_prof.url,
+                "text_length": len(r_prof.text),
+                "full_html": r_prof.text,
+                "inputs": inputs,
+                "labels": labels,
+                "images": images,
+                "table_rows": table_rows
+            }
+        except Exception as pe:
+            prof_debug = {"error": str(pe)}
+
+        header_tag_sample = ""
+        for tag in dash_soup.find_all(True):
+            if "Role: STUDENT" in tag.get_text():
+                if not any("Role: STUDENT" in c.get_text() for c in tag.find_all(True)):
+                    header_tag_sample = str(tag)
+                    break
+
+        results_by_classcode = {}
+        if result_diag.get("selects") and len(result_diag["selects"]) > 0:
+            for opt in result_diag["selects"][0].get("options", []):
+                code = opt.get("value")
+                if code and code not in ("0", ""):
+                    try:
+                        r_c = s_fresh.get(f"https://agclms.in/DashBoardStudent/Results?ClassCode={code}", timeout=8)
+                        soup_c = BeautifulSoup(r_c.text, "html.parser")
+                        results_by_classcode[opt.get("text")] = {
+                            "code": code,
+                            "status": r_c.status_code,
+                            "tables": [[tr.get_text(" | ", strip=True) for tr in t.find_all("tr")] for t in soup_c.find_all("table")]
+                        }
+                    except Exception as ce:
+                        results_by_classcode[opt.get("text")] = {"error": str(ce)}
+
+        # Run updated PortalClient verification
+        client = PortalClient(student_id, plain_pw)
+        p_deep, p_err = client.get_full_profile(fast_mode=False)
 
         return jsonify({
             "ok": True,
-            "post_status": r_post.status_code,
-            "dash_status": r_dash.status_code,
-            "dash_has_attendance": "AttendanceReport" in r_dash.text,
-            "attendance_urls": attendance_urls,
-            "first_two_details": first_two_details,
-            "p_err": p_err,
-            "profile_fast_summary": {
-                "total_calendar_records": len(profile_fast.get("calendar_records", [])),
-                "today_attendance": profile_fast.get("today_attendance", []),
-                "today_date": profile_fast.get("today_date"),
-                "latest_attendance_date": profile_fast.get("latest_attendance_date"),
-                "sample_recent_calendar": [r for r in profile_fast.get("calendar_records", [])][-10:]
+            "student_id": student_id,
+            "header_tag_sample": header_tag_sample,
+            "role_matches": role_matches,
+            "prof_debug": prof_debug,
+            "results_by_classcode": results_by_classcode,
+            "portal_client_verification": {
+                "student_name": p_deep.get("student_name") if p_deep else None,
+                "profile_details_count": len(p_deep.get("profile", {}).get("details", [])) if p_deep else 0,
+                "profile_details_sample": p_deep.get("profile", {}).get("details", [])[:12] if p_deep else [],
+                "has_photo": bool(p_deep.get("profile", {}).get("photo_url")) if p_deep else False,
+                "results_count": len(p_deep.get("results", [])) if p_deep else 0,
+                "results_summary": [{"sem": s.get("semester"), "sgpa": s.get("sgpa"), "status": s.get("status"), "reappears": s.get("reappear_subjects")} for s in p_deep.get("results", [])] if p_deep else [],
+                "today_attendance": p_deep.get("today_attendance", []) if p_deep else [],
+                "calendar_records_count": len(p_deep.get("calendar_records", [])) if p_deep else 0
             }
         })
     except Exception as e:
@@ -1075,11 +1212,11 @@ def api_app_version():
         "download_url": "/download/UltraPortal.apk",
         "external_download_url": "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk",
         "changelog": [
-            "Fixed Today's Live Attendance sync & Microsoft-IIS connection drop",
-            "Full Calendar history with universal date normalization (Oct 15 - Oct 21, 2026)",
-            "Automatic fallback to latest available college portal lecture uploads",
-            "Strict Android APK update popup isolation (zero web popups)",
-            "Ultra fast attendance sync (<1.8s live updates)"
+            "Bulletproof real student name extraction across header, sidebar & profile",
+            "Complete student profile details with Base64 student photo support",
+            "Official multi-semester marksheet tables with UGC weighted SGPA",
+            "Instant dynamic DOM updates without full page reloads",
+            "Polished header brand pills & streamlined clean dashboard view"
         ]
     })
 
