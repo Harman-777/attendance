@@ -541,6 +541,60 @@ class PortalClient:
         except Exception:
             return []
 
+    def get_academic_and_profile(self, dash_soup=None):
+        """
+        Ultra-Fast Stage 2 Deep Sync (<1.8 seconds):
+        Scrapes student profile details, exam results/marksheets, and fees concurrently
+        WITHOUT re-scraping attendance subjects. Prevents Vercel 10s Serverless timeout.
+        """
+        dash_html = getattr(self, "_cached_dash_html", None)
+        if dash_soup is None:
+            if not dash_html or "AttendanceReport" not in dash_html:
+                try:
+                    dash_res = self.session.get(DASHBOARD_URL, timeout=8)
+                    if "StudentLogin" in dash_res.url or "AttendanceReport" not in dash_res.text:
+                        ok, err = self.authenticate()
+                        if not ok:
+                            return None, err
+                        dash_html = getattr(self, "_cached_dash_html", "")
+                    else:
+                        dash_html = dash_res.text
+                except Exception:
+                    ok, err = self.authenticate()
+                    if not ok:
+                        return None, err
+                    dash_html = getattr(self, "_cached_dash_html", "")
+            dash_soup = BeautifulSoup(dash_html, "html.parser")
+
+        student_name = extract_student_name(dash_soup, fallback=str(self.student_id))
+
+        with ThreadPoolExecutor(max_workers=3) as exec:
+            fut_prof = exec.submit(self.get_student_profile, dash_soup)
+            fut_res = exec.submit(self.get_exam_results, dash_soup)
+            fut_fees = exec.submit(self.get_fees, dash_soup)
+
+            profile_data = fut_prof.result()
+            results_data = fut_res.result()
+            fees_data = fut_fees.result()
+
+        student_email = ""
+        for k, v in profile_data.get("details", []):
+            if k.lower() == "name" and v and v.strip() and v.strip().lower() != "student":
+                student_name = v.strip().title()
+            elif "email" in k.lower() and v:
+                student_email = v.strip()
+
+        profile_data["details"] = [d for d in profile_data.get("details", []) if d[0].lower() != "name"]
+        profile_data["details"].insert(0, ("Name", student_name))
+
+        return {
+            "student_name": student_name,
+            "student_email": student_email,
+            "profile": profile_data,
+            "results": results_data,
+            "fees": fees_data
+        }, None
+
     def get_full_profile(self, fast_mode=False):
         """
         If fast_mode=True, only scrapes Attendance subjects (~2 seconds) so the
@@ -573,9 +627,8 @@ class PortalClient:
         incharge_match = re.search(r"Incharge\s*Name\s*:\s*([A-Za-z\s\.]+?)(?:Subjects|Session|$)", text, re.I)
         incharge_name = incharge_match.group(1).strip() if incharge_match else "Vinod Kumar"
 
-        # Extract student name directly from dashboard header for instant fast_mode
-        name_match = re.search(r"Welcome\s+([A-Za-z\s]+?)(?:\||Student|Roll|Incharge|$)", text, re.I)
-        student_name = name_match.group(1).strip() if name_match else "Student"
+        # Extract student name directly from dashboard header
+        student_name = extract_student_name(dash_soup, fallback="Student")
 
         subjects = []
         seen_urls = set()

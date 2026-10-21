@@ -8,6 +8,15 @@ document.addEventListener("DOMContentLoaded", function () {
     let targetThreshold = 75;
     let medicalMode = false;
 
+    function getInitials(name) {
+        if (!name || name.trim().toLowerCase() === "student") return "🎓";
+        const parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+        return name.slice(0, 2).toUpperCase();
+    }
+
     // 1. Sidebar Navigation Tab Switching
     const navButtons = document.querySelectorAll(".nav-btn");
     const tabPanels = document.querySelectorAll(".tab-panel");
@@ -777,6 +786,24 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             if (!res.ok) return;
 
+            // 0. Update student name immediately if real name returned from fast sync
+            if (res.student_name && res.student_name.toLowerCase() !== "student") {
+                portalData.student_name = res.student_name;
+                const welcomeEl = document.getElementById("welcome-student-name");
+                if (welcomeEl) welcomeEl.textContent = res.student_name;
+                const mobileSub = document.querySelector(".mobile-student-sub");
+                if (mobileSub) mobileSub.innerHTML = `<span class="student-name">${res.student_name}</span> • ${portalData.student_id || ""}`;
+                const heroName = document.getElementById("profile-hero-name") || document.querySelector(".profile-name");
+                if (heroName) heroName.textContent = res.student_name;
+                document.querySelectorAll(".student-name, .user-name, #sidebar-student-name").forEach(function (el) {
+                    el.textContent = res.student_name;
+                });
+                const initialsEl = document.getElementById("profile-avatar-initials");
+                if (initialsEl && (!portalData.profile || !portalData.profile.photo_url)) {
+                    initialsEl.textContent = getInitials(res.student_name);
+                }
+            }
+
             // 1. Update live sync header badge
             if (syncPill) {
                 syncPill.className = "sync-pill sync-live";
@@ -951,9 +978,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     // A. Dynamically update student name in header, sidebar & profile
                     if (deepRes.student_name && deepRes.student_name.toLowerCase() !== "student") {
                         portalData.student_name = deepRes.student_name;
+                        const welcomeEl = document.getElementById("welcome-student-name");
+                        if (welcomeEl) welcomeEl.textContent = deepRes.student_name;
                         const mobileSub = document.querySelector(".mobile-student-sub");
                         if (mobileSub) {
-                            mobileSub.textContent = deepRes.student_name + " • " + (portalData.student_id || "");
+                            mobileSub.innerHTML = `<span class="student-name">${deepRes.student_name}</span> • ${portalData.student_id || ""}`;
                         }
                         const heroName = document.getElementById("profile-hero-name") || document.querySelector(".profile-name");
                         if (heroName) {
@@ -965,26 +994,32 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
 
                     // B. Dynamically update Profile tab (#tab-profile)
-                    if (deepRes.profile && deepRes.profile.details && deepRes.profile.details.length > 0) {
+                    if (deepRes.profile) {
                         portalData.profile = deepRes.profile;
-                        if (deepRes.profile.photo_url) {
-                            const avatarEl = document.getElementById("profile-avatar-container") || document.querySelector(".profile-avatar");
-                            if (avatarEl) {
+                        const avatarEl = document.getElementById("profile-avatar-container") || document.querySelector(".profile-avatar");
+                        if (avatarEl) {
+                            if (deepRes.profile.photo_url) {
                                 avatarEl.innerHTML = `<img src="${deepRes.profile.photo_url}" alt="Student" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                            } else {
+                                const initials = getInitials(deepRes.student_name || portalData.student_name);
+                                avatarEl.innerHTML = `<span id="profile-avatar-initials" style="font-size: 2.2rem; font-weight: 800; color: #ffffff; letter-spacing: 0.05em; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">${initials}</span>`;
                             }
                         }
-                        const gridEl = document.getElementById("profile-grid-container") || document.querySelector(".profile-grid");
-                        if (gridEl) {
-                            let profHtml = "";
-                            deepRes.profile.details.forEach(function (pair) {
-                                profHtml += `
-                                    <div class="profile-item">
-                                        <div class="profile-label">${pair[0]}</div>
-                                        <div class="profile-val">${pair[1]}</div>
-                                    </div>
-                                `;
-                            });
-                            gridEl.innerHTML = profHtml;
+
+                        if (deepRes.profile.details && deepRes.profile.details.length > 0) {
+                            const gridEl = document.getElementById("profile-grid-container") || document.querySelector(".profile-grid");
+                            if (gridEl) {
+                                let profHtml = "";
+                                deepRes.profile.details.forEach(function (pair) {
+                                    profHtml += `
+                                        <div class="profile-item">
+                                            <div class="profile-label">${pair[0]}</div>
+                                            <div class="profile-val">${pair[1]}</div>
+                                        </div>
+                                    `;
+                                });
+                                gridEl.innerHTML = profHtml;
+                            }
                         }
                     }
 

@@ -25,7 +25,7 @@
             <span class="mobile-brand-icon">⚡</span>
             <div class="mobile-brand-text">
                 <div class="mobile-app-title">Ultra Portal <span class="app-badge">v{{ app_version }}</span></div>
-                <div class="mobile-student-sub">{{ data.student_name }} • {{ data.student_id }}</div>
+                <div class="mobile-student-sub"><span class="student-name">{{ data.student_name }}</span> • {{ data.student_id }}</div>
             </div>
         </div>
         <div class="mobile-actions">
@@ -109,7 +109,7 @@
 
             <header class="main-header">
                 <div class="header-student-info">
-                    <h1>Welcome back, {{ data.student_name }}!</h1>
+                    <h1>Welcome back, <span id="welcome-student-name" class="student-name">{{ data.student_name }}</span>!</h1>
                     <p class="header-student-meta">Student ID: <b class="text-cyan">{{ data.student_id }}</b> <span
                             class="meta-dot">•</span> Faculty Incharge: <b>{{ data.incharge }}</b></p>
                     <div class="sync-status-row" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
@@ -694,46 +694,6 @@
                     };
                     </script>
 
-                    <script>
-                    window.submitUltraFeedback = function () {
-                        const btn = document.getElementById("btn-submit-feedback");
-                        const statusEl = document.getElementById("fb-status-msg");
-                        const category = document.getElementById("fb-category").value;
-                        const rating = document.getElementById("fb-rating").value;
-                        const message = document.getElementById("fb-message").value.trim();
-
-                        if (message.length < 5) {
-                            statusEl.textContent = "Please write at least 5 characters before submitting.";
-                            statusEl.style.color = "#f87171";
-                            return;
-                        }
-
-                        btn.disabled = true;
-                        statusEl.textContent = "Sending feedback to developer...";
-                        statusEl.style.color = "#38bdf8";
-
-                        fetch("/api/submit-feedback", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ category: category, rating: rating, message: message })
-                        })
-                        .then(function (r) { return r.json(); })
-                        .then(function (res) {
-                            btn.disabled = false;
-                            statusEl.textContent = res.message;
-                            statusEl.style.color = res.ok ? "#4ade80" : "#f87171";
-                            if (res.ok) {
-                                document.getElementById("fb-message").value = "";
-                                setTimeout(function () { window.location.reload(); }, 900);
-                            }
-                        })
-                        .catch(function (err) {
-                            btn.disabled = false;
-                            statusEl.textContent = "Network error: " + err.message;
-                            statusEl.style.color = "#f87171";
-                        });
-                    };
-                    </script>
                         <input type="email" id="alert-to-email" class="form-input"
                             placeholder="Recipient Email (your email)" value="{{ data.student_email }}">
                         <input type="email" id="alert-smtp-user" class="form-input"
@@ -834,12 +794,14 @@
 
             <div class="profile-hero">
                 <div class="profile-left">
-                    <div class="profile-avatar" id="profile-avatar-container">
+                    <div class="profile-avatar" id="profile-avatar-container" style="position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%); box-shadow: 0 0 20px rgba(79, 70, 229, 0.4); border: 2px solid rgba(255, 255, 255, 0.2);">
                         {% if data.profile and data.profile.photo_url %}
                         <img src="{{ data.profile.photo_url }}" alt="Student"
-                            style="width: 100%; height: 100%; object-fit: cover;">
+                            style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                         {% else %}
-                        👤
+                        <span id="profile-avatar-initials" style="font-size: 2.2rem; font-weight: 800; color: #ffffff; letter-spacing: 0.05em; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">
+                            {{ (data.student_name.split()[0][0] + data.student_name.split()[-1][0]).upper() if data.student_name and data.student_name != 'Student' and data.student_name.split()|length > 1 else (data.student_name[:2].upper() if data.student_name and data.student_name != 'Student' else '🎓') }}
+                        </span>
                         {% endif %}
                     </div>
                     <div class="profile-meta">

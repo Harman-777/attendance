@@ -260,6 +260,15 @@ def dashboard():
             data = local_cache
             needs_background_sync = True
 
+    # Sanitize student_name & profile details if cache holds generic "Student"
+    if data:
+        if (not data.get("student_name") or data.get("student_name").strip().lower() == "student") and db_user and db_user.get("student_name") and db_user.get("student_name").strip().lower() != "student":
+            data["student_name"] = db_user.get("student_name")
+        if data.get("profile") and data["profile"].get("details"):
+            for i, pair in enumerate(data["profile"]["details"]):
+                if pair[0].lower() == "name" and (not pair[1] or pair[1].strip().lower() == "student") and data.get("student_name") and data.get("student_name").strip().lower() != "student":
+                    data["profile"]["details"][i] = ("Name", data["student_name"])
+
     # 2. First-Time User Cold Start: Fetch ONLY Attendance first (~2 seconds)
     if not data:
         client = PortalClient(student_id, password, cookies=session.get("portal_cookies"))
@@ -435,25 +444,42 @@ def api_background_sync():
             "partial_was_upgraded": False
         })
     else:
-        # Stage 2: Deep sync for Results, Marksheets, Fees, and Profile details
-        data, err = client.get_full_profile(fast_mode=False)
-        if not data:
+        # Stage 2: Ultra-Fast Deep Sync for Results, Marksheets, Fees, and Profile details (~1.5s)
+        # Prevents Vercel 10s Serverless timeout by NOT re-scraping attendance subjects!
+        deep_data, err = client.get_academic_and_profile()
+        if not deep_data:
             return jsonify({"ok": False, "message": err or "Portal offline"})
 
         session["portal_cookies"] = client.get_cookies()
 
+        # Merge deep_data into existing cached snapshot from Supabase or local cache
+        db_user = get_user_record(student_id)
+        cached = (db_user.get("cached_profile") if db_user else None) or load_snapshot(student_id) or {}
+
+        if deep_data.get("student_name") and deep_data["student_name"].lower() != "student":
+            cached["student_name"] = deep_data["student_name"]
+        if deep_data.get("student_email"):
+            cached["student_email"] = deep_data["student_email"]
+        if deep_data.get("profile"):
+            cached["profile"] = deep_data["profile"]
+        if deep_data.get("results"):
+            cached["results"] = deep_data["results"]
+        if deep_data.get("fees"):
+            cached["fees"] = deep_data["fees"]
+        cached["partial_load"] = False
+
         today_str = datetime.now(IST).strftime("%d-%m-%Y")
         today_pretty = datetime.now(IST).strftime("%a, %d %b %Y")
-        data["today_date"] = today_pretty
-        if not data.get("today_attendance"):
-            data["today_attendance"] = [
-                r for r in data.get("calendar_records", [])
+        cached["today_date"] = today_pretty
+        if not cached.get("today_attendance"):
+            cached["today_attendance"] = [
+                r for r in cached.get("calendar_records", [])
                 if r.get("date") == today_str
             ]
 
         # Fallback to newest portal upload if missing
-        if not data.get("latest_attendance_date") or not data.get("latest_attendance_records"):
-            cal_recs = [r for r in data.get("calendar_records", []) if r.get("date")]
+        if not cached.get("latest_attendance_date") or not cached.get("latest_attendance_records"):
+            cal_recs = [r for r in cached.get("calendar_records", []) if r.get("date")]
             if cal_recs:
                 def _parse_d(r):
                     try:
@@ -461,45 +487,45 @@ def api_background_sync():
                     except Exception:
                         return datetime.min
                 cal_recs.sort(key=_parse_d, reverse=True)
-                data["latest_attendance_date"] = cal_recs[0].get("date")
+                cached["latest_attendance_date"] = cal_recs[0].get("date")
                 seen_k = set()
                 latest_recs = []
                 for r in cal_recs:
-                    if r.get("date") == data["latest_attendance_date"]:
+                    if r.get("date") == cached["latest_attendance_date"]:
                         k = (r.get("subject"), r.get("status"))
                         if k not in seen_k:
                             seen_k.add(k)
                             latest_recs.append(r)
-                data["latest_attendance_records"] = latest_recs
+                cached["latest_attendance_records"] = latest_recs
 
         save_vault = session.get("save_vault", True)
-        new_absents = sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
-        save_snapshot(student_id, data)
+        new_absents = sync_user_to_supabase(student_id, password, cached, is_login_event=False, save_vault=save_vault)
+        save_snapshot(student_id, cached)
 
-        total_p = sum(s["present"] for s in data["subjects"])
-        total_t = sum(s["total"] for s in data["subjects"])
+        total_p = sum(s.get("present", 0) for s in cached.get("subjects", []))
+        total_t = sum(s.get("total", 0) for s in cached.get("subjects", []))
         overall_pct = round((total_p / total_t * 100), 2) if total_t > 0 else 0.0
 
         return jsonify({
             "ok": True,
             "sync_mode": "deep",
-            "last_synced": data.get("last_synced"),
-            "student_name": data.get("student_name"),
+            "last_synced": cached.get("last_synced"),
+            "student_name": cached.get("student_name"),
             "today_date": today_pretty,
             "overall_pct": overall_pct,
             "overall_present": total_p,
             "overall_classes": total_t,
-            "subjects": data.get("subjects", []),
-            "today_attendance": data.get("today_attendance", []),
-            "latest_attendance_date": data.get("latest_attendance_date"),
-            "latest_attendance_records": data.get("latest_attendance_records", []),
-            "calendar_records": data.get("calendar_records", []),
+            "subjects": cached.get("subjects", []),
+            "today_attendance": cached.get("today_attendance", []),
+            "latest_attendance_date": cached.get("latest_attendance_date"),
+            "latest_attendance_records": cached.get("latest_attendance_records", []),
+            "calendar_records": cached.get("calendar_records", []),
             "new_absents": new_absents,
-            "has_results": bool(data.get("results")),
-            "results": data.get("results", []),
-            "sgpa_trend": data.get("sgpa_trend", []),
-            "fees": data.get("fees", []),
-            "profile": data.get("profile", {}),
+            "has_results": bool(cached.get("results")),
+            "results": cached.get("results", []),
+            "sgpa_trend": cached.get("sgpa_trend", []),
+            "fees": cached.get("fees", []),
+            "profile": cached.get("profile", {}),
             "partial_was_upgraded": True
         })
 
