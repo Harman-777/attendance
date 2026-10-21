@@ -273,14 +273,21 @@ function isAndroidWebViewOrApk() {
     const ua = navigator.userAgent || "";
     return (
         window.AndroidApp !== undefined ||
-        ua.includes("UltraPortalApp") ||
-        /; wv\)/i.test(ua) ||
-        (/Android/i.test(ua) && /Version\/[\d\.]+/i.test(ua) && /Chrome\/[\d\.]+/i.test(ua))
+        /UltraPortalApp/i.test(ua) ||
+        (/Android/i.test(ua) && /; wv\)/i.test(ua))
     );
 }
 
-// In-App APK Version & Auto-Update Checker
+// In-App APK Version & Auto-Update Checker (Strictly isolated to Android APK / WebView)
 function checkApkUpdate() {
+    if (!isAndroidWebViewOrApk()) {
+        const stalePopup = document.getElementById("ultra-update-popup");
+        if (stalePopup) stalePopup.remove();
+        const staleBanner = document.getElementById("apk-update-banner");
+        if (staleBanner) staleBanner.remove();
+        return;
+    }
+
     fetch("/api/app-version?t=" + Date.now(), { cache: "no-store" })
         .then(function (r) { return r.json(); })
         .then(function (data) {
@@ -291,10 +298,8 @@ function checkApkUpdate() {
                 const match = navigator.userAgent.match(/UltraPortalApp\/([\d\.]+)/);
                 if (match) {
                     installedVer = match[1];
-                } else if (isAndroidWebViewOrApk()) {
-                    installedVer = "2.0";
                 } else {
-                    installedVer = localStorage.getItem("ultra_seen_app_version") || "2.0";
+                    installedVer = "2.0";
                 }
             }
 

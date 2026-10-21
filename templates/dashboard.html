@@ -112,13 +112,17 @@
                     <h1>Welcome back, {{ data.student_name }}!</h1>
                     <p class="header-student-meta">Student ID: <b class="text-cyan">{{ data.student_id }}</b> <span
                             class="meta-dot">•</span> Faculty Incharge: <b>{{ data.incharge }}</b></p>
-                    {% if data.is_offline %}
-                    <span class="sync-pill sync-offline">⚡ OFFLINE SNAPSHOT MODE (Last Synced: {{ data.last_synced
-                        }})</span>
-                    {% else %}
-                    <span class="sync-pill sync-live">● LIVE PORTAL SYNC ({{ data.last_synced }})</span>
-                    {% endif %}
-                    <div style="margin-top: 10px;">
+                    <div class="sync-status-row" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+                        {% if data.is_offline %}
+                        <span class="sync-pill sync-offline" id="sync-status-pill" onclick="window.triggerRealtimeAttendanceSync(true)" style="cursor: pointer;" title="Tap to sync live attendance from portal">⚡ OFFLINE SNAPSHOT MODE (Last Synced: <span id="sync-time-badge">{{ data.last_synced }}</span>)</span>
+                        {% else %}
+                        <span class="sync-pill sync-live" id="sync-status-pill" onclick="window.triggerRealtimeAttendanceSync(true)" style="cursor: pointer;" title="Tap to sync live attendance from portal">● LIVE PORTAL SYNC (<span id="sync-time-badge">{{ data.last_synced }}</span>)</span>
+                        {% endif %}
+                        <button type="button" id="btn-live-attendance-sync" class="btn-live-sync-pill" onclick="window.triggerRealtimeAttendanceSync(true)" title="Force live sync from college portal now" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease;">
+                            <span class="sync-icon-spin" style="display: inline-block;">🔄</span> Live Sync
+                        </button>
+                    </div>
+                    <div style="margin-top: 6px;">
                         <button type="button" class="btn-app-hub-trigger" onclick="openUltraAppModal()">
                             📲 Get Mobile App / Share
                         </button>
@@ -128,11 +132,11 @@
                     <span class="stats-label">OVERALL ATTENDANCE</span>
                     <div class="stats-num-wrap">
                         <h2 class="stats-pct" id="overall-pct-display">{{ overall_pct }}%</h2>
-                        <span class="stats-status-pill {% if overall_pct >= 75 %}pct-safe{% else %}pct-danger{% endif %}">
+                        <span class="stats-status-pill {% if overall_pct >= 75 %}pct-safe{% else %}pct-danger{% endif %}" id="overall-status-pill">
                             {% if overall_pct >= 75 %}Safe{% else %}Needs Boost{% endif %}
                         </span>
                     </div>
-                    <p class="stats-count">{{ overall_present }} / {{ overall_classes }} total lectures</p>
+                    <p class="stats-count" id="overall-classes-count"><span id="overall-present-num">{{ overall_present }}</span> / <span id="overall-classes-num">{{ overall_classes }}</span> total lectures</p>
                 </div>
             </header>
 

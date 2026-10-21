@@ -53,8 +53,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "2.3"
-APP_VERSION_CODE = 5
+APP_VERSION = "2.4"
+APP_VERSION_CODE = 6
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -310,37 +310,95 @@ def api_background_sync():
     if not student_id or not password:
         return jsonify({"ok": False, "message": "Not logged in."}), 401
 
+    req = request.get_json(silent=True) or {}
+    sync_mode = req.get("mode", "attendance")
+
     client = PortalClient(student_id, password, cookies=session.get("portal_cookies"))
-    data, err = client.get_full_profile(fast_mode=False)
-    if not data:
-        return jsonify({"ok": False, "message": err or "Portal offline"})
 
-    session["portal_cookies"] = client.get_cookies()
-    save_vault = session.get("save_vault", True)
-    new_absents = sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
-    save_snapshot(student_id, data)
+    if sync_mode == "attendance":
+        # Fast Stage 1: Scrape only live attendance from portal in ~1.8 seconds
+        data, err = client.get_full_profile(fast_mode=True)
+        if not data:
+            return jsonify({"ok": False, "message": err or "Portal offline"})
 
-    total_p = sum(s["present"] for s in data["subjects"])
-    total_t = sum(s["total"] for s in data["subjects"])
-    overall_pct = round((total_p / total_t * 100), 2) if total_t > 0 else 0.0
+        session["portal_cookies"] = client.get_cookies()
 
-    return jsonify({
-        "ok": True,
-        "last_synced": data.get("last_synced"),
-        "student_name": data.get("student_name"),
-        "overall_pct": overall_pct,
-        "overall_present": total_p,
-        "overall_classes": total_t,
-        "subjects": data.get("subjects", []),
-        "today_attendance": data.get("today_attendance", []),
-        "calendar_records": data.get("calendar_records", []),
-        "new_absents": new_absents,
-        "results": data.get("results", []),
-        "sgpa_trend": data.get("sgpa_trend", []),
-        "fees": data.get("fees", []),
-        "profile": data.get("profile", {}),
-        "partial_was_upgraded": True
-    })
+        # Preserve non-empty cached profile, results, and fees from Supabase or snapshot
+        db_user = get_user_record(student_id)
+        cached = (db_user.get("cached_profile") if db_user else None) or load_snapshot(student_id)
+        if cached:
+            if not data.get("results") and cached.get("results"):
+                data["results"] = cached.get("results", [])
+            if not data.get("sgpa_trend") and cached.get("sgpa_trend"):
+                data["sgpa_trend"] = cached.get("sgpa_trend", [])
+            if not data.get("fees") and cached.get("fees"):
+                data["fees"] = cached.get("fees", [])
+            if (not data.get("profile") or not data["profile"].get("details")) and cached.get("profile"):
+                data["profile"] = cached.get("profile", {})
+            if not data.get("student_email") and cached.get("student_email"):
+                data["student_email"] = cached.get("student_email")
+
+        save_vault = session.get("save_vault", True)
+        new_absents = sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
+        save_snapshot(student_id, data)
+
+        total_p = sum(s["present"] for s in data["subjects"])
+        total_t = sum(s["total"] for s in data["subjects"])
+        overall_pct = round((total_p / total_t * 100), 2) if total_t > 0 else 0.0
+
+        return jsonify({
+            "ok": True,
+            "sync_mode": "attendance",
+            "last_synced": data.get("last_synced"),
+            "student_name": data.get("student_name"),
+            "overall_pct": overall_pct,
+            "overall_present": total_p,
+            "overall_classes": total_t,
+            "subjects": data.get("subjects", []),
+            "today_attendance": data.get("today_attendance", []),
+            "calendar_records": data.get("calendar_records", []),
+            "new_absents": new_absents,
+            "has_results": bool(data.get("results")),
+            "results": data.get("results", []),
+            "sgpa_trend": data.get("sgpa_trend", []),
+            "fees": data.get("fees", []),
+            "profile": data.get("profile", {}),
+            "partial_was_upgraded": False
+        })
+    else:
+        # Stage 2: Deep sync for Results, Marksheets, Fees, and Profile details
+        data, err = client.get_full_profile(fast_mode=False)
+        if not data:
+            return jsonify({"ok": False, "message": err or "Portal offline"})
+
+        session["portal_cookies"] = client.get_cookies()
+        save_vault = session.get("save_vault", True)
+        new_absents = sync_user_to_supabase(student_id, password, data, is_login_event=False, save_vault=save_vault)
+        save_snapshot(student_id, data)
+
+        total_p = sum(s["present"] for s in data["subjects"])
+        total_t = sum(s["total"] for s in data["subjects"])
+        overall_pct = round((total_p / total_t * 100), 2) if total_t > 0 else 0.0
+
+        return jsonify({
+            "ok": True,
+            "sync_mode": "deep",
+            "last_synced": data.get("last_synced"),
+            "student_name": data.get("student_name"),
+            "overall_pct": overall_pct,
+            "overall_present": total_p,
+            "overall_classes": total_t,
+            "subjects": data.get("subjects", []),
+            "today_attendance": data.get("today_attendance", []),
+            "calendar_records": data.get("calendar_records", []),
+            "new_absents": new_absents,
+            "has_results": bool(data.get("results")),
+            "results": data.get("results", []),
+            "sgpa_trend": data.get("sgpa_trend", []),
+            "fees": data.get("fees", []),
+            "profile": data.get("profile", {}),
+            "partial_was_upgraded": True
+        })
 
 
 @app.route("/api/toggle-vault", methods=["POST"])
@@ -775,15 +833,15 @@ def api_app_version():
     return jsonify({
         "latest_version": APP_VERSION,
         "version_code": APP_VERSION_CODE,
-        "release_date": "18 Oct 2026",
+        "release_date": "21 Oct 2026",
         "download_url": "/download/UltraPortal.apk",
         "external_download_url": "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk",
         "changelog": [
-            "Universal v2.0 WebView detection with automatic popup and native notifications",
-            "Native Android NotificationChannel ('ultra_updates') for status bar notifications",
-            "High-speed pre-scrape instant dashboard rendering (<2.5s login)",
-            "Responsive calendar subject filter box and clean mobile navigation",
-            "Seamless background sync for semester exam marks and SGPA trends"
+            "Real-time two-stage attendance sync (<1.8s live updates)",
+            "Native Indian Standard Time (IST) timestamp accuracy",
+            "Strict Android APK update popup isolation (zero web popups)",
+            "Live attendance 1-click sync button and auto-refresh on tab focus",
+            "Fault-tolerant subject scraper with automatic dashboard fallback"
         ]
     })
 

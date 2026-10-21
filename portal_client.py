@@ -1,10 +1,12 @@
 import re
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin
 import requests
 from requests.adapters import HTTPAdapter
 from bs4 import BeautifulSoup
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 LOGIN_URL = "https://agclms.in/Elogin/StudentLogin"
 DASHBOARD_URL = "https://agclms.in/DashBoardStudent"
@@ -139,28 +141,23 @@ class PortalClient:
     def get_student_profile(self, dash_soup):
         try:
             candidate_urls = []
-            for a in dash_soup.find_all("a"):
-                txt = a.get_text(" ", strip=True).lower()
-                href = a.get("href", "")
-                onclick = a.get("onclick", "")
-                if any(k in txt for k in ["profile", "bio", "student info", "personal", "details"]) or any(k in href.lower() for k in ["profile", "studentinfo", "biodata"]):
-                    if href and not href.startswith("#") and not href.startswith("javascript"):
-                        candidate_urls.append(urljoin(DASHBOARD_URL + "/", href))
-                    elif onclick:
-                        m = re.search(r"['\"]([^'\"]*profile[^'\"]*)['\"]", onclick, re.I)
-                        if m:
-                            candidate_urls.append(urljoin(DASHBOARD_URL + "/", m.group(1)))
+            if dash_soup:
+                for a in dash_soup.find_all("a"):
+                    txt = a.get_text(" ", strip=True).lower()
+                    href = a.get("href", "")
+                    onclick = a.get("onclick", "")
+                    if any(k in txt for k in ["profile", "bio", "student info", "personal", "details"]) or any(k in href.lower() for k in ["profile", "studentinfo", "biodata"]):
+                        if href and not href.startswith("#") and not href.startswith("javascript"):
+                            candidate_urls.append(urljoin(DASHBOARD_URL + "/", href))
+                        elif onclick:
+                            m = re.search(r"['\"]([^'\"]*profile[^'\"]*)['\"]", onclick, re.I)
+                            if m:
+                                candidate_urls.append(urljoin(DASHBOARD_URL + "/", m.group(1)))
 
+            # Keep only the primary official profile fallback endpoints (prevent 10s serverless timeout)
             candidate_urls.extend([
                 "https://agclms.in/DashBoardStudent/StudentProfile",
-                "https://agclms.in/DashBoardStudent/StudentProfileNew",
-                "https://agclms.in/DashBoardStudent/Profile",
-                "https://agclms.in/DashBoardStudent/MyProfile",
-                "https://agclms.in/DashBoardStudent/StudentInfo",
-                "https://agclms.in/StudentProfile",
-                "https://agclms.in/Student/StudentProfile",
-                "https://agclms.in/Student/Profile",
-                "https://agclms.in/Student/StudentInfo"
+                "https://agclms.in/DashBoardStudent/Profile"
             ])
 
             # Deduplicate URLs maintaining order
@@ -175,7 +172,7 @@ class PortalClient:
             active_url = DASHBOARD_URL
             for url in clean_candidates:
                 try:
-                    r = self.session.get(url, timeout=8)
+                    r = self.session.get(url, timeout=4)
                     if r.status_code == 200 and "StudentLogin" not in r.url and len(r.text) > 400:
                         if any(k in r.text for k in ["Roll", "Student", "Class", "Course", "Father", "Mother", "Batch", "Mobile", "Email", "Enrollment"]):
                             p_soup = BeautifulSoup(r.text, "html.parser")
@@ -288,12 +285,7 @@ class PortalClient:
 
             candidate_urls.extend([
                 RESULTS_URL,
-                "https://agclms.in/DashBoardStudent/Results",
-                "https://agclms.in/DashBoardStudent/StudentResult",
-                "https://agclms.in/DashBoardStudent/ExamResult",
-                "https://agclms.in/StudentResult",
-                "https://agclms.in/Student/StudentResult",
-                "https://agclms.in/Student/Results"
+                "https://agclms.in/DashBoardStudent/Results"
             ])
 
             seen_r_urls = set()
@@ -307,7 +299,7 @@ class PortalClient:
             active_results_url = RESULTS_URL
             for url in clean_candidates:
                 try:
-                    r = self.session.get(url, timeout=8)
+                    r = self.session.get(url, timeout=4)
                     if r.status_code == 200 and "StudentLogin" not in r.url and len(r.text) > 400:
                         s = BeautifulSoup(r.text, "html.parser")
                         select = s.find("select", {"name": re.compile(r"ClassCode|Semester|Sem|Course", re.I)}) or s.find("select")
@@ -339,7 +331,7 @@ class PortalClient:
             def fetch_single_sem(item):
                 code, sem_name = item
                 sem_url = f"{active_results_url}?{param_name}={code}"
-                r = self.session.get(sem_url, timeout=8)
+                r = self.session.get(sem_url, timeout=5)
                 s = BeautifulSoup(r.text, "html.parser")
                 tables = []
                 extracted_grades = []
@@ -403,11 +395,7 @@ class PortalClient:
 
             candidate_urls.extend([
                 "https://agclms.in/DashBoardStudent/StudentFeeDetails",
-                "https://agclms.in/DashBoardStudent/FeeDetails",
-                "https://agclms.in/DashBoardStudent/Fees",
-                "https://agclms.in/StudentFee/StudentFeeDetails",
-                "https://agclms.in/DashBoardStudent/FeeReceipt",
-                "https://agclms.in/Student/FeeDetails"
+                "https://agclms.in/DashBoardStudent/FeeDetails"
             ])
 
             seen_fee_urls = set()
@@ -417,7 +405,7 @@ class PortalClient:
                     continue
                 seen_fee_urls.add(f_url)
                 try:
-                    r = self.session.get(f_url, timeout=8)
+                    r = self.session.get(f_url, timeout=4)
                     if r.status_code == 200 and "StudentLogin" not in r.url and len(r.text) > 400:
                         s = BeautifulSoup(r.text, "html.parser")
                         for table in s.find_all("table"):
@@ -460,9 +448,9 @@ class PortalClient:
                 else:
                     dash_html = dash_res.text
 
-        today_str = datetime.now().strftime("%d-%m-%Y")
-        today_pretty = datetime.now().strftime("%a, %d %b %Y")
-        sync_time = datetime.now().strftime("%d %b %Y, %I:%M %p")
+        today_str = datetime.now(IST).strftime("%d-%m-%Y")
+        today_pretty = datetime.now(IST).strftime("%a, %d %b %Y")
+        sync_time = datetime.now(IST).strftime("%d %b %Y, %I:%M %p")
 
         dash_soup = BeautifulSoup(dash_html, "html.parser")
         text = dash_soup.get_text(" ", strip=True)
@@ -470,7 +458,7 @@ class PortalClient:
         incharge_match = re.search(r"Incharge\s*Name\s*:\s*([A-Za-z\s\.]+?)(?:Subjects|Session|$)", text, re.I)
         incharge_name = incharge_match.group(1).strip() if incharge_match else "Vinod Kumar"
 
-        # Try extracting student name directly from dashboard header for fast_mode
+        # Extract student name directly from dashboard header for instant fast_mode
         name_match = re.search(r"Welcome\s+([A-Za-z\s]+?)(?:\||Student|Roll|Incharge|$)", text, re.I)
         student_name = name_match.group(1).strip() if name_match else "Student"
 
@@ -489,31 +477,73 @@ class PortalClient:
                     seen_urls.add(full_url)
                     cols = [c.get_text(strip=True) for c in row.find_all(["td", "th"]) if c.get_text(strip=True)]
                     subject_name = cols[0] if cols else "Subject"
-                    subjects.append((subject_name, full_url))
+
+                    # Parse fallback present / total numbers directly from main dashboard table
+                    fallback_p, fallback_t = 0, 0
+                    for c in cols[1:]:
+                        nums = re.findall(r"\b\d+\b", c)
+                        if len(nums) == 2:
+                            t_cand, p_cand = int(nums[0]), int(nums[1])
+                            fallback_p = min(t_cand, p_cand)
+                            fallback_t = max(t_cand, p_cand)
+                            break
+                        elif len(nums) == 1 and "/" in c:
+                            parts = c.split("/")
+                            if len(parts) == 2 and parts[0].strip().isdigit() and parts[1].strip().isdigit():
+                                fallback_p, fallback_t = int(parts[0]), int(parts[1])
+                                break
+
+                    subjects.append({
+                        "name": subject_name,
+                        "url": full_url,
+                        "fallback_p": fallback_p,
+                        "fallback_t": fallback_t
+                    })
 
         def fetch_subject(item):
-            name, url = item
-            r = self.session.get(url, timeout=8)
-            s = BeautifulSoup(r.text, "html.parser")
-            present, absent = 0, 0
+            name = item["name"]
+            url = item["url"]
+            fallback_p = item.get("fallback_p", 0)
+            fallback_t = item.get("fallback_t", 0)
+            present = fallback_p
+            absent = max(0, fallback_t - fallback_p)
             records = []
 
-            for row in s.find_all("tr"):
-                row_text = row.get_text(" ", strip=True)
-                upper_text = row_text.upper()
-                date_match = re.search(r"(\d{2}-\d{2}-\d{4})", row_text)
-                date_val = date_match.group(1) if date_match else None
+            try:
+                r = self.session.get(url, timeout=6)
+                if r.status_code == 200 and len(r.text) > 200:
+                    s = BeautifulSoup(r.text, "html.parser")
+                    scrape_p, scrape_a = 0, 0
+                    scrape_records = []
+                    for row in s.find_all("tr"):
+                        row_text = row.get_text(" ", strip=True)
+                        upper_text = row_text.upper()
+                        date_match = re.search(r"(\d{2}-\d{2}-\d{4})", row_text)
+                        date_val = date_match.group(1) if date_match else None
 
-                if "PRESENT" in upper_text:
-                    present += 1
-                    if date_val:
-                        records.append({"date": date_val, "subject": name, "status": "PRESENT"})
-                elif "ABSENT" in upper_text:
-                    absent += 1
-                    if date_val:
-                        records.append({"date": date_val, "subject": name, "status": "ABSENT"})
+                        if "PRESENT" in upper_text:
+                            scrape_p += 1
+                            if date_val:
+                                scrape_records.append({"date": date_val, "subject": name, "status": "PRESENT"})
+                        elif "ABSENT" in upper_text:
+                            scrape_a += 1
+                            if date_val:
+                                scrape_records.append({"date": date_val, "subject": name, "status": "ABSENT"})
+
+                    if scrape_p + scrape_a > 0 or len(scrape_records) > 0:
+                        present = scrape_p
+                        absent = scrape_a
+                        records = scrape_records
+            except Exception:
+                # Keep fallback numbers on timeout or network glitch so scrape never fails
+                pass
 
             total = present + absent
+            if total == 0 and fallback_t > 0:
+                total = fallback_t
+                present = fallback_p
+                absent = max(0, total - present)
+
             pct = (present / total * 100) if total > 0 else 0.0
             bunks = int((present - 0.75 * total) // 0.75) if pct >= 75 else 0
             needed = int(((0.75 * total - present) / 0.25) + 0.999) if pct < 75 else 0
@@ -543,18 +573,9 @@ class PortalClient:
                 "records": records
             }
 
-        # Always fetch profile concurrently with subjects so every student gets full details immediately
-        with ThreadPoolExecutor(max_workers=9) as executor:
-            fut_profile = executor.submit(self.get_student_profile, dash_soup)
+        # Fast parallel scrape of all subjects concurrently
+        with ThreadPoolExecutor(max_workers=10) as executor:
             subject_results = list(executor.map(fetch_subject, subjects))
-            profile_data = fut_profile.result()
-
-        student_email = ""
-        for k, v in profile_data.get("details", []):
-            if k.lower() == "name" and v:
-                student_name = v
-            elif "email" in k.lower() and v:
-                student_email = v
 
         all_records = []
         today_attendance = []
@@ -568,27 +589,36 @@ class PortalClient:
             return {
                 "student_id": self.student_id,
                 "student_name": student_name,
-                "student_email": student_email,
+                "student_email": "",
                 "incharge": incharge_name,
                 "today_date": today_pretty,
-                "last_synced": sync_time + " (Fast Sync)",
+                "last_synced": sync_time + " (Live)",
                 "is_offline": False,
                 "partial_load": True,
                 "today_attendance": today_attendance,
                 "calendar_records": all_records,
                 "subjects": subject_results,
                 "results": [],
-                "profile": profile_data,
+                "profile": {"details": [("Name", student_name), ("Student Id", str(self.student_id)), ("Faculty Incharge", incharge_name)]},
                 "fees": []
             }, None
 
-        # Fetch Results and Fees in parallel for complete sync
-        with ThreadPoolExecutor(max_workers=2) as extra_exec:
-            f_results = extra_exec.submit(self.get_exam_results, dash_soup)
-            f_fees = extra_exec.submit(self.get_fees, dash_soup)
+        # Deep Sync: Fetch Profile, Results and Fees concurrently in a single thread pool (prevents 10s timeout)
+        with ThreadPoolExecutor(max_workers=3) as extra_exec:
+            fut_profile = extra_exec.submit(self.get_student_profile, dash_soup)
+            fut_results = extra_exec.submit(self.get_exam_results, dash_soup)
+            fut_fees = extra_exec.submit(self.get_fees, dash_soup)
 
-            results_data = f_results.result()
-            fees_data = f_fees.result()
+            profile_data = fut_profile.result()
+            results_data = fut_results.result()
+            fees_data = fut_fees.result()
+
+        student_email = ""
+        for k, v in profile_data.get("details", []):
+            if k.lower() == "name" and v:
+                student_name = v
+            elif "email" in k.lower() and v:
+                student_email = v
 
         return {
             "student_id": self.student_id,

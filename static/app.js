@@ -612,51 +612,225 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 11. Non-Blocking Background Sync (Keeps initial page load under 1 second)
-    if (portalData.needs_background_sync) {
-        const syncPill = document.querySelector(".sync-pill");
+    // 11. Two-Stage Real-Time Live Attendance Sync (<1.8s DOM Updates, Auto-Focus, Manual Button)
+    window.triggerRealtimeAttendanceSync = function (isManual) {
+        const syncPill = document.getElementById("sync-status-pill") || document.querySelector(".sync-pill");
+        const syncBtn = document.getElementById("btn-live-attendance-sync");
+        const syncIcon = syncBtn ? syncBtn.querySelector(".sync-icon-spin") : null;
+
         if (syncPill) {
-            syncPill.textContent = "🔄 Syncing Live Portal in Background...";
+            syncPill.className = "sync-pill sync-offline";
+            syncPill.textContent = "⚡ Syncing live attendance from portal...";
+        }
+        if (syncIcon) {
+            syncIcon.style.animation = "spin 1s linear infinite";
+        }
+        if (syncBtn) {
+            syncBtn.style.opacity = "0.7";
+            syncBtn.disabled = true;
         }
 
-        setTimeout(function () {
-            fetch("/api/background-sync", { method: "POST" })
-                .then(function (r) { return r.json(); })
-                .then(function (res) {
-                    if (!res.ok) return;
-                    if (syncPill) {
-                        syncPill.className = "sync-pill sync-live";
-                        syncPill.textContent = "● LIVE PORTAL SYNC (" + res.last_synced + ")";
-                    }
-                    const overallEl = document.getElementById("overall-pct-display");
-                    if (overallEl && res.overall_pct !== undefined) {
-                        overallEl.textContent = res.overall_pct + "%";
-                    }
+        fetch("/api/background-sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mode: "attendance" })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (syncBtn) {
+                syncBtn.style.opacity = "1";
+                syncBtn.disabled = false;
+            }
+            if (syncIcon) {
+                syncIcon.style.animation = "none";
+            }
+            if (!res.ok) return;
 
-                    // Background Sync Toast
-                    const syncToast = document.getElementById("bg-sync-toast");
-                    if (syncToast) {
-                        syncToast.textContent = "✨ Sync Complete: Records & Profile Updated";
-                        syncToast.style.opacity = "1";
-                        syncToast.style.transform = "translateY(0)";
-                        setTimeout(function () {
-                            syncToast.style.opacity = "0";
-                            syncToast.style.transform = "translateY(-10px)";
-                        }, 3500);
-                    }
+            // 1. Update live sync header badge
+            if (syncPill) {
+                syncPill.className = "sync-pill sync-live";
+                syncPill.innerHTML = '● LIVE PORTAL SYNC (<span id="sync-time-badge">' + res.last_synced + '</span>)';
+            }
 
-                    // If this was a cold-start partial load, or if results were missing and now retrieved, reload once silently
-                    const hadNoResults = (!portalData.results || portalData.results.length === 0);
-                    const nowHasResults = (res.results && res.results.length > 0);
-                    if (portalData.partial_load || portalData.needs_profile_refresh || (hadNoResults && nowHasResults)) {
-                        setTimeout(function () {
-                            window.location.reload();
-                        }, 600);
+            // 2. Update overall percentage and counters in real time
+            const overallEl = document.getElementById("overall-pct-display");
+            if (overallEl && res.overall_pct !== undefined) {
+                overallEl.textContent = res.overall_pct + "%";
+            }
+            const statusPill = document.getElementById("overall-status-pill");
+            if (statusPill && res.overall_pct !== undefined) {
+                if (res.overall_pct >= 75) {
+                    statusPill.className = "stats-status-pill pct-safe";
+                    statusPill.textContent = "Safe";
+                } else {
+                    statusPill.className = "stats-status-pill pct-danger";
+                    statusPill.textContent = "Needs Boost";
+                }
+            }
+            const presNum = document.getElementById("overall-present-num");
+            const classNum = document.getElementById("overall-classes-num");
+            if (presNum && res.overall_present !== undefined) presNum.textContent = res.overall_present;
+            if (classNum && res.overall_classes !== undefined) classNum.textContent = res.overall_classes;
+
+            // 3. Update every Subject Card dynamically without page reload
+            if (res.subjects && res.subjects.length > 0) {
+                portalData.subjects = res.subjects;
+                res.subjects.forEach(function (s, idx) {
+                    const card = document.querySelector(`.sub-card[data-idx="${idx}"]`) ||
+                                 document.querySelector(`.sub-card[data-name="${s.name}"]`);
+                    if (card) {
+                        card.dataset.present = s.present;
+                        card.dataset.total = s.total;
+                        card.dataset.origP = s.present;
+                        card.dataset.origT = s.total;
+
+                        card.classList.remove("danger-border", "warn-border");
+                        if (s.danger_level === "critical") card.classList.add("danger-border");
+                        else if (s.danger_level === "warning") card.classList.add("warn-border");
+
+                        const pctEl = document.getElementById(`pct-${idx}`) || card.querySelector(".pct-display");
+                        if (pctEl) {
+                            pctEl.textContent = s.pct + "%";
+                            pctEl.className = "pct-display " + (s.pct >= 75 ? "pct-safe" : "pct-danger");
+                        }
+
+                        const barEl = document.getElementById(`bar-${idx}`) || card.querySelector(".progress-fill");
+                        if (barEl) {
+                            barEl.style.width = Math.min(100, Math.max(0, s.pct)) + "%";
+                            barEl.dataset.pct = s.pct;
+                        }
+
+                        const countEl = document.getElementById(`count-${idx}`);
+                        if (countEl) {
+                            countEl.innerHTML = `Attended: <b>${s.present}</b> / <b>${s.total}</b> classes`;
+                        }
+
+                        const statusBox = document.getElementById(`status-box-${idx}`);
+                        if (statusBox) {
+                            statusBox.textContent = s.status_msg;
+                        }
+
+                        const nextAtt = document.getElementById(`next-att-${idx}`);
+                        const nextSkip = document.getElementById(`next-skip-${idx}`);
+                        const nextAttPct = ((s.present + 1) / (s.total + 1) * 100).toFixed(1);
+                        const nextSkipPct = (s.total > 0 ? (s.present / (s.total + 1) * 100) : 0).toFixed(1);
+                        if (nextAtt) nextAtt.textContent = `↗ Next Attend: ${nextAttPct}%`;
+                        if (nextSkip) nextSkip.textContent = `↘ Next Skip: ${nextSkipPct}%`;
+                    }
+                });
+            }
+
+            // 4. Update Today's Attendance list in real time
+            if (res.today_attendance) {
+                portalData.today_attendance = res.today_attendance;
+                const todayCard = document.querySelector(".today-card");
+                if (todayCard) {
+                    let listWrap = todayCard.querySelector(".today-list");
+                    if (res.today_attendance.length > 0) {
+                        let html = "";
+                        res.today_attendance.forEach(function (item) {
+                            const isPres = item.status === "PRESENT";
+                            html += `
+                                <div class="today-pill">
+                                    <span class="today-subj-name">${item.subject}</span>
+                                    <div class="today-status-wrap">
+                                        <span class="${isPres ? 'badge-present' : 'badge-absent'}">${item.status}</span>
+                                        ${!isPres ? `<button type="button" class="btn-dispute-pill open-dispute-btn" data-subject="${item.subject}" data-date="${item.date}">Dispute</button>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        if (!listWrap) {
+                            const existingP = todayCard.querySelector("p");
+                            if (existingP) existingP.remove();
+                            listWrap = document.createElement("div");
+                            listWrap.className = "today-list";
+                            todayCard.appendChild(listWrap);
+                        }
+                        listWrap.innerHTML = html;
+                    }
+                }
+            }
+
+            // 5. Update Calendar entries in real time
+            if (res.calendar_records && res.calendar_records.length > 0) {
+                portalData.calendar_records = res.calendar_records;
+                if (typeof renderCalendar === "function") {
+                    renderCalendar();
+                }
+            }
+
+            // 6. Manual Sync Toast Feedback
+            if (isManual) {
+                const syncToast = document.getElementById("bg-sync-toast");
+                if (syncToast) {
+                    syncToast.textContent = "⚡ Real-Time Attendance Synced (" + res.last_synced + ")";
+                    syncToast.style.opacity = "1";
+                    syncToast.style.transform = "translateY(0)";
+                    setTimeout(function () {
+                        syncToast.style.opacity = "0";
+                        syncToast.style.transform = "translateY(-10px)";
+                    }, 3000);
+                }
+            }
+
+            // 7. Silent Stage 2 Deep Sync (Only if student has empty Results/SGPA)
+            const hadNoResults = (!portalData.results || portalData.results.length === 0);
+            if (hadNoResults && !window._hasFiredDeepSync) {
+                window._hasFiredDeepSync = true;
+                fetch("/api/background-sync", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mode: "deep" })
+                })
+                .then(function (dr) { return dr.json(); })
+                .then(function (deepRes) {
+                    if (deepRes.ok && deepRes.results && deepRes.results.length > 0) {
+                        portalData.results = deepRes.results;
+                        portalData.sgpa_trend = deepRes.sgpa_trend;
+                        portalData.fees = deepRes.fees;
+                        portalData.profile = deepRes.profile;
+                        if (typeof renderResults === "function") {
+                            renderResults();
+                        }
                     }
                 })
                 .catch(function () {});
-        }, 400);
-    }
+            }
+        })
+        .catch(function () {
+            if (syncBtn) {
+                syncBtn.style.opacity = "1";
+                syncBtn.disabled = false;
+            }
+            if (syncIcon) {
+                syncIcon.style.animation = "none";
+            }
+        });
+    };
+
+    // Auto-trigger live attendance sync on initial load (250ms)
+    setTimeout(function () {
+        window.triggerRealtimeAttendanceSync(false);
+    }, 250);
+
+    // Auto-sync on window/tab focus if more than 60 seconds have elapsed
+    let lastTabSyncTime = Date.now();
+    document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") {
+            if (Date.now() - lastTabSyncTime > 60000) {
+                lastTabSyncTime = Date.now();
+                window.triggerRealtimeAttendanceSync(false);
+            }
+        }
+    });
+
+    // Auto-sync periodic interval every 180 seconds while dashboard is open
+    setInterval(function () {
+        if (document.visibilityState === "visible") {
+            window.triggerRealtimeAttendanceSync(false);
+        }
+    }, 180000);
     // // 12. Submit Feedback & Suggestions to Supabase
     // const fbBtn = document.getElementById("btn-submit-feedback");
     // const fbStatus = document.getElementById("fb-status-msg");

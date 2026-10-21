@@ -48,12 +48,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getAppVersion() {
-            return "2.3";
+            return "2.4";
         }
 
         @JavascriptInterface
         public int getAppVersionCode() {
-            return 5;
+            return 6;
         }
 
         @JavascriptInterface
@@ -234,7 +234,7 @@ public class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " UltraPortalApp/2.3");
+        settings.setUserAgentString(settings.getUserAgentString() + " UltraPortalApp/2.4");
 
         // Enable Cookies
         CookieManager cookieManager = CookieManager.getInstance();
