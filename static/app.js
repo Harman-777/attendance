@@ -752,15 +752,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     };
 
-    // 11. Two-Stage Real-Time Live Attendance Sync (<1.8s DOM Updates, Auto-Focus, Manual Button)
+    // 11. Two-Stage Real-Time Live Attendance Sync (<1.8s DOM Updates, Auto-Focus, Interactive Smart Pill)
     window.triggerRealtimeAttendanceSync = function (isManual) {
-        const syncPill = document.getElementById("sync-status-pill") || document.querySelector(".sync-pill");
+        const syncPill = document.getElementById("sync-status-pill");
         const syncBtn = document.getElementById("btn-live-attendance-sync");
-        const syncIcon = syncBtn ? syncBtn.querySelector(".sync-icon-spin") : null;
+        const syncIcon = syncBtn ? syncBtn.querySelector(".sync-icon-spin") : (syncPill ? syncPill.querySelector(".sync-spin-icon") : null);
 
         if (syncPill) {
-            syncPill.className = "sync-pill sync-offline";
-            syncPill.textContent = "⚡ Syncing live attendance from portal...";
+            syncPill.className = "sync-pill is-syncing";
+            syncPill.disabled = true;
+            syncPill.innerHTML = '<span class="sync-spin-icon spinning">🔄</span> <span class="sync-pill-text">Syncing live attendance...</span>';
         }
         if (syncIcon) {
             syncIcon.style.animation = "spin 1s linear infinite";
@@ -784,7 +785,14 @@ document.addEventListener("DOMContentLoaded", function () {
             if (syncIcon) {
                 syncIcon.style.animation = "none";
             }
-            if (!res.ok) return;
+            if (!res.ok) {
+                if (syncPill) {
+                    syncPill.className = "sync-pill sync-offline";
+                    syncPill.disabled = false;
+                    syncPill.innerHTML = '<span class="sync-dot">⚠️</span> <span class="sync-pill-text">Offline Snapshot (Tap to retry)</span> <span class="sync-spin-icon">🔄</span>';
+                }
+                return;
+            }
 
             // 0. Update student name immediately if real name returned from fast sync
             if (res.student_name && res.student_name.toLowerCase() !== "student") {
@@ -804,11 +812,31 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
 
-            // 1. Update live sync header badge
+            // 1. Update live sync smart pill badge
             if (syncPill) {
                 syncPill.className = "sync-pill sync-live";
-                syncPill.innerHTML = '● LIVE PORTAL SYNC (<span id="sync-time-badge">' + res.last_synced + '</span>)';
+                syncPill.disabled = false;
+                syncPill.innerHTML = '<span class="sync-dot">●</span> <span class="sync-pill-text">Live Synced (<span id="sync-time-badge">' + (res.last_synced || 'Just now') + '</span>)</span> <span class="sync-spin-icon">🔄</span>';
             }
+
+            // Visual feedback pulse on overall stats and subject cards
+            const overallCard = document.querySelector(".header-stats-card");
+            if (overallCard) {
+                overallCard.classList.remove("sync-pulse");
+                void overallCard.offsetWidth;
+                overallCard.classList.add("sync-pulse");
+                setTimeout(function () {
+                    overallCard.classList.remove("sync-pulse");
+                }, 1500);
+            }
+            document.querySelectorAll(".sub-card").forEach(function (card) {
+                card.classList.remove("sync-pulse");
+                void card.offsetWidth;
+                card.classList.add("sync-pulse");
+                setTimeout(function () {
+                    card.classList.remove("sync-pulse");
+                }, 1500);
+            });
 
             // 2. Update overall percentage and counters in real time
             const overallEl = document.getElementById("overall-pct-display");
@@ -1037,13 +1065,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 .catch(function () {});
             }
         })
-        .catch(function () {
+        .catch(function (err) {
             if (syncBtn) {
                 syncBtn.style.opacity = "1";
                 syncBtn.disabled = false;
             }
             if (syncIcon) {
                 syncIcon.style.animation = "none";
+            }
+            if (syncPill) {
+                syncPill.className = "sync-pill sync-offline";
+                syncPill.disabled = false;
+                syncPill.innerHTML = '<span class="sync-dot">⚠️</span> <span class="sync-pill-text">Offline Snapshot (Tap to retry)</span> <span class="sync-spin-icon">🔄</span>';
             }
         });
     };
