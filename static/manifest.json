@@ -1,13 +1,13 @@
 {
-  "name": "Ultra Student Workspace",
-  "short_name": "Ultra Portal",
+  "name": "Krono — Student Workspace",
+  "short_name": "Krono",
   "description": "All-in-One Student Workspace: 0.4s Instant Attendance, Vacation Planner, SGPA Analytics & Absent Alerts",
   "id": "/?source=pwa",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#090d16",
-  "theme_color": "#090d16",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait",
   "categories": ["education", "productivity"],
   "icons": [

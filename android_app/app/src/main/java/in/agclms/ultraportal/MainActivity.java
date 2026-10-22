@@ -36,7 +36,8 @@ import android.webkit.WebViewClient;
 public class MainActivity extends Activity {
 
     private static final String PORTAL_URL = "https://attendance-liard-three.vercel.app";
-    private static final int DARK_BG_COLOR = 0xFF090D16;
+    private static final int DARK_BG_COLOR = 0xFF000000;
+    private static final int LIGHT_BG_COLOR = 0xFFF4F4F5;
     private WebView webView;
 
     public class WebAppInterface {
@@ -48,13 +49,54 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getAppVersion() {
-            return "2.6";
+            return "2.7";
         }
 
         @JavascriptInterface
         public int getAppVersionCode() {
-            return 8;
+            return 9;
         }
+
+        @JavascriptInterface
+        public void setSystemBarTheme(final String mode) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            Window window = activity.getWindow();
+                            boolean isLight = "light".equalsIgnoreCase(mode);
+                            int bgColor = isLight ? LIGHT_BG_COLOR : DARK_BG_COLOR;
+                            window.setStatusBarColor(bgColor);
+                            window.setNavigationBarColor(bgColor);
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                android.view.View decor = window.getDecorView();
+                                int flags = decor.getSystemUiVisibility();
+                                if (isLight) {
+                                    flags |= android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        flags |= android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                                    }
+                                } else {
+                                    flags &= ~android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        flags &= ~android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                                    }
+                                }
+                                decor.setSystemUiVisibility(flags);
+                            }
+                            if (webView != null) {
+                                webView.setBackgroundColor(bgColor);
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
 
         @JavascriptInterface
         public void showNativeNotification(final String title, final String body) {
@@ -71,7 +113,7 @@ public class MainActivity extends Activity {
                         NotificationManager notificationManager = (NotificationManager) activity.getSystemService(Context.NOTIFICATION_SERVICE);
                         if (notificationManager == null) return;
 
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(PORTAL_URL + "/download/UltraPortal.apk"));
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(PORTAL_URL + "/download/Krono.apk"));
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         PendingIntent pendingIntent = PendingIntent.getActivity(
                             activity,
@@ -82,7 +124,7 @@ public class MainActivity extends Activity {
 
                         Notification.Builder builder;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            builder = new Notification.Builder(activity, "ultra_updates");
+                            builder = new Notification.Builder(activity, "krono_updates");
                         } else {
                             builder = new Notification.Builder(activity);
                         }
@@ -153,9 +195,9 @@ public class MainActivity extends Activity {
                         Intent sendIntent = new Intent();
                         sendIntent.setAction(Intent.ACTION_SEND);
                         sendIntent.putExtra(Intent.EXTRA_TEXT, text);
-                        sendIntent.putExtra(Intent.EXTRA_SUBJECT, "⚡ Ultra Portal — Student Workspace");
+                        sendIntent.putExtra(Intent.EXTRA_SUBJECT, "⚡ Krono — Student Workspace");
                         sendIntent.setType("text/plain");
-                        Intent chooser = Intent.createChooser(sendIntent, "Share Ultra Portal via");
+                        Intent chooser = Intent.createChooser(sendIntent, "Share Krono via");
                         chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         activity.startActivity(chooser);
                     } catch (Exception e) {
@@ -200,11 +242,11 @@ public class MainActivity extends Activity {
         // Create high-importance NotificationChannel for Ultra Portal Updates (Android 8.0+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                "ultra_updates",
-                "Ultra Portal Updates",
+                "krono_updates",
+                "Krono Updates",
                 NotificationManager.IMPORTANCE_HIGH
             );
-            channel.setDescription("Notifications about new Ultra Portal updates and features");
+            channel.setDescription("Notifications about new Krono updates and features");
             NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (manager != null) {
                 manager.createNotificationChannel(channel);
@@ -323,10 +365,10 @@ public class MainActivity extends Activity {
                     if (dm != null) {
                         Uri downloadUri = Uri.parse(url);
                         DownloadManager.Request request = new DownloadManager.Request(downloadUri);
-                        request.setTitle("Ultra Portal APK Update");
-                        request.setDescription("Downloading latest UltraPortal.apk...");
+                        request.setTitle("Krono APK Update");
+                        request.setDescription("Downloading latest Krono.apk...");
                         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "UltraPortal.apk");
+                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "Krono.apk");
                         request.setMimeType("application/vnd.android.package-archive");
                         dm.enqueue(request);
 
@@ -340,7 +382,7 @@ public class MainActivity extends Activity {
                 try {
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    Intent chooser = Intent.createChooser(intent, "Download Ultra Portal with");
+                    Intent chooser = Intent.createChooser(intent, "Download Krono with");
                     chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(chooser);
                 } catch (Exception ex) {

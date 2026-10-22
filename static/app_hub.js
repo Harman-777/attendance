@@ -90,7 +90,7 @@ function copyApkDownloadLink() {
 function triggerApkUpdate() {
     const isApk = isAndroidWebViewOrApk();
     // In APK shells, use external GitHub URL to avoid self-recursive App Link loops into the app
-    const targetUrl = isApk ? EXTERNAL_APK_DOWNLOAD_URL : (window.location.origin + "/download/UltraPortal.apk");
+    const targetUrl = isApk ? EXTERNAL_APK_DOWNLOAD_URL : (window.location.origin + "/download/Krono.apk");
 
     // Dismiss update popup so it doesn't stay on screen or cause any loops
     sessionStorage.setItem("apk_update_popup_dismissed", "1");
@@ -114,7 +114,7 @@ function triggerPwaInstall() {
         deferredInstallPrompt.prompt();
         deferredInstallPrompt.userChoice.then(function (choice) {
             if (choice.outcome === "accepted") {
-                console.log("Ultra Portal WebAPK installed!");
+                console.log("Krono WebAPK installed!");
                 updatePwaInstallButtonState();
             }
             deferredInstallPrompt = null;
@@ -123,7 +123,7 @@ function triggerPwaInstall() {
         const iosBox = document.getElementById("ios-install-guide");
         if (iosBox) iosBox.style.display = "block";
     } else {
-        const confirmDownload = confirm("WebAPK prompt is preparing. Would you like to download the direct signed Android APK (UltraPortal.apk) right now?");
+        const confirmDownload = confirm("WebAPK prompt is preparing. Would you like to download the direct signed Android APK (Krono.apk) right now?");
         if (confirmDownload) {
             triggerApkUpdate();
         }
@@ -179,7 +179,7 @@ document.addEventListener("keydown", function (e) {
 // Viral Share Actions
 function shareOnWhatsApp() {
     const origin = window.location.origin;
-    const downloadUrl = origin + "/download/UltraPortal.apk";
+    const downloadUrl = origin + "/download/Krono.apk";
     const msg = "⚡ Check your live college attendance in 0.4 seconds, calculate safe bunks, and get instant absent alerts!\n\n📲 Direct Android App Download: " + downloadUrl + "\n🌐 Web Workspace: " + origin;
 
     // 1. Android APK native bridge -> launches WhatsApp mobile app directly
@@ -201,8 +201,8 @@ function shareOnWhatsApp() {
 
 function shareNativeSheet() {
     const origin = window.location.origin;
-    const downloadUrl = origin + "/download/UltraPortal.apk";
-    const shareText = "⚡ Ultra Portal — Check your live college attendance in 0.4 seconds, calculate safe bunks & get absent alerts!\n\n📲 Direct APK Download:\n" + downloadUrl + "\n\n🌐 Web Portal:\n" + origin;
+    const downloadUrl = origin + "/download/Krono.apk";
+    const shareText = "⚡ Krono — Check your live college attendance in 0.4 seconds, calculate safe bunks & get absent alerts!\n\n📲 Direct APK Download:\n" + downloadUrl + "\n\n🌐 Web Portal:\n" + origin;
 
     // 1. Android APK native share drawer bridge
     if (window.AndroidApp && typeof window.AndroidApp.shareApp === "function") {
@@ -213,7 +213,7 @@ function shareNativeSheet() {
     // 2. Standard Web Share API (Chrome / Safari / Edge mobile)
     if (navigator.share) {
         navigator.share({
-            title: "⚡ Ultra Portal — Student Workspace",
+            title: "⚡ Krono — Student Workspace",
             text: shareText,
             url: downloadUrl
         }).catch(function () {
@@ -226,7 +226,7 @@ function shareNativeSheet() {
 
 function copyPortalShareLink() {
     const origin = window.location.origin;
-    const downloadUrl = origin + "/download/UltraPortal.apk";
+    const downloadUrl = origin + "/download/Krono.apk";
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(downloadUrl).then(function () {
             showCopyFeedback();
@@ -249,7 +249,7 @@ function fallbackCopy(text) {
         document.execCommand("copy");
         showCopyFeedback();
     } catch (e) {
-        prompt("Copy Ultra Portal APK Download Link:", text);
+        prompt("Copy Krono APK Download Link:", text);
     }
     document.body.removeChild(t);
 }
@@ -330,7 +330,7 @@ function checkApkUpdate() {
                 // 2. Trigger native Android notification if Java bridge is available
                 if (window.AndroidApp && typeof window.AndroidApp.showNativeNotification === "function") {
                     window.AndroidApp.showNativeNotification(
-                        "🚀 Ultra Portal v" + data.latest_version + " Ready!",
+                        "🚀 Krono v" + data.latest_version + " Ready!",
                         "Tap to install the latest update with faster login & new features."
                     );
                 }
@@ -340,7 +340,7 @@ function checkApkUpdate() {
                     if ("Notification" in window && Notification.permission === "granted") {
                         if (navigator.serviceWorker && navigator.serviceWorker.ready) {
                             navigator.serviceWorker.ready.then(function (reg) {
-                                reg.showNotification("🚀 Ultra Portal Update (v" + data.latest_version + ") Ready!", {
+                                reg.showNotification("🚀 Krono Update (v" + data.latest_version + ") Ready!", {
                                     body: "Tap to update your app with 5x faster login & automatic SGPA records.",
                                     icon: "/static/icons/icon-192.png",
                                     badge: "/static/icons/icon-192.png",
@@ -360,7 +360,7 @@ function checkApkUpdate() {
                         <div style="background: #111827; border: 2px solid #38bdf8; border-radius: 20px; max-width: 400px; width: 100%; padding: 26px 22px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
                             <div style="font-size: 2.5rem; margin-bottom: 10px;">🚀</div>
                             <div style="display: inline-block; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px; letter-spacing: 0.04em;">NEW UPDATE READY</div>
-                            <h3 style="color: #f8fafc; font-size: 1.35rem; font-weight: 800; margin-bottom: 8px;">Ultra Portal v${data.latest_version}</h3>
+                            <h3 style="color: #f8fafc; font-size: 1.35rem; font-weight: 800; margin-bottom: 8px;">Krono v${data.latest_version}</h3>
                             <p style="color: #94a3b8; font-size: 0.88rem; line-height: 1.45; margin-bottom: 18px;">
                                 Your installed app is <b>v${installedVer}</b>. An updated version is available with <b>5x faster login</b>, <b>automated SGPA marksheets</b>, and mobile fixes!
                             </p>
@@ -386,7 +386,7 @@ function checkApkUpdate() {
                     banner.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 0.86rem; color: #f8fafc;">
                             <span style="font-size: 1.15rem;">🚀</span>
-                            <span><b>Ultra Portal Update (v${data.latest_version})</b> is ready!</span>
+                            <span><b>Krono Update (v${data.latest_version})</b> is ready!</span>
                         </div>
                         <div style="display: flex; gap: 8px; align-items: center;">
                             <button type="button" onclick="triggerApkUpdate()" style="background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff; border: none; cursor: pointer; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.4);">
@@ -407,3 +407,7 @@ document.addEventListener("DOMContentLoaded", function () {
     updatePwaInstallButtonState();
     checkApkUpdate();
 });
+
+// Backward and forward compatibility aliases
+window.openKronoAppModal = openUltraAppModal;
+window.closeKronoAppModal = closeUltraAppModal;

@@ -53,8 +53,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "2.6"
-APP_VERSION_CODE = 8
+APP_VERSION = "2.7"
+APP_VERSION_CODE = 9
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -747,7 +747,7 @@ def api_test_push():
     save_push_or_email_prefs(student_id, push_sub=sub, auto_sync=True)
     ok, msg = send_web_push(
         sub,
-        "⚡ Ultra Portal Lock-Screen Push Active!",
+        "⚡ Krono Lock-Screen Push Active!",
         "Your device is now linked to Supabase. Any new ABSENT mark will alert you automatically!"
     )
     return jsonify({"ok": ok, "message": msg})
@@ -1237,7 +1237,7 @@ def api_admin_delete_feedback():
 def api_admin_broadcast_push():
     req = request.get_json() or {}
     target = (req.get("target") or "all").strip()
-    title = (req.get("title") or "⚡ Ultra Portal Announcement").strip()
+    title = (req.get("title") or "⚡ Krono Announcement").strip()
     body = (req.get("body") or "").strip()
 
     if not body:
@@ -1322,14 +1322,21 @@ def assetlinks():
     return jsonify(assetlinks_data)
 
 
+@app.route("/download/Krono.apk")
 @app.route("/download/UltraPortal.apk")
 def download_apk():
-    apk_path = os.path.join(static_dir, "apk", "UltraPortal.apk")
-    if os.path.isfile(apk_path):
+    krono_path = os.path.join(static_dir, "apk", "Krono.apk")
+    ultra_path = os.path.join(static_dir, "apk", "UltraPortal.apk")
+    target_path = krono_path if os.path.isfile(krono_path) else ultra_path
+    
+    is_krono = request.path.endswith("Krono.apk")
+    dl_name = "Krono.apk" if is_krono else "UltraPortal.apk"
+
+    if os.path.isfile(target_path):
         resp = make_response(send_file(
-            apk_path,
+            target_path,
             as_attachment=True,
-            download_name="UltraPortal.apk",
+            download_name=dl_name,
             mimetype="application/vnd.android.package-archive"
         ))
         resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -1344,15 +1351,15 @@ def api_app_version():
     return jsonify({
         "latest_version": APP_VERSION,
         "version_code": APP_VERSION_CODE,
-        "release_date": "21 Oct 2026",
-        "download_url": "/download/UltraPortal.apk",
+        "release_date": "22 Oct 2026",
+        "download_url": "/download/Krono.apk",
         "external_download_url": "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk",
         "changelog": [
-            "Bulletproof real student name extraction across header, sidebar & profile",
-            "Complete student profile details with Base64 student photo support",
-            "Official multi-semester marksheet tables with UGC weighted SGPA",
-            "Instant dynamic DOM updates without full page reloads",
-            "Polished header brand pills & streamlined clean dashboard view"
+            "Complete flagship rebrand to Krono v2.7 with precision geometric chevron logo",
+            "Studio-grade Dual Theme System: Pitch-Black OLED Dark + Paper-White Light Mode",
+            "1.5px / 1.75px Lucide vector line icons replacing all system emojis",
+            "Native Android system status bar & navigation bar theme synchronization",
+            "Tabular monospace typography for razor-sharp attendance statistics"
         ]
     })
 

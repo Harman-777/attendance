@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="kronoBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="kronoDarkBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141418" />
+      <stop offset="100%" stop-color="#09090B" />
+    </linearGradient>
+    <filter id="kronoGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#2563EB" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <!-- Squircle Base -->
+  <rect width="100" height="100" rx="24" fill="url(#kronoDarkBg)" stroke="#222228" stroke-width="2"/>
+  <!-- Geometric K Mark -->
+  <g filter="url(#kronoGlow)">
+    <!-- Vertical Pillar (Pure White) -->
+    <rect x="22" y="22" width="13" height="56" rx="6.5" fill="#FAFAFA" />
+    <!-- Upper Chevron (Electric Cobalt) -->
+    <path d="M 41 53 L 66 28 C 68.5 25.5 72.5 25.5 75 28 C 77.5 30.5 77.5 34.5 75 37 L 53 59 C 51 61 47 61 45 59 Z" fill="url(#kronoBlue)" />
+    <!-- Lower Chevron (Electric Cobalt) -->
+    <path d="M 45 44 L 75 74 C 77.5 76.5 77.5 80.5 75 83 C 72.5 85.5 68.5 85.5 66 83 L 41 58 C 39 56 39 52 41 50 Z" fill="url(#kronoBlue)" />
+  </g>
+</svg>

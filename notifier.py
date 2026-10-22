@@ -19,7 +19,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
-VAPID_CLAIMS = {"sub": "mailto:alerts@ultraportal.app"}
+VAPID_CLAIMS = {"sub": "mailto:alerts@krono.app"}
 
 
 def get_cache_path(student_id):
@@ -99,11 +99,11 @@ def send_absent_email(to_email, student_name, absent_list, smtp_user=None, smtp_
 
     html_body = f"""
     <div style="font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; border-radius: 12px;">
-        <h2 style="color: #ef4444; margin-top: 0;">⚠️ Ultra Portal Absent Alert</h2>
+        <h2 style="color: #ef4444; margin-top: 0;">⚠️ Krono Absent Alert</h2>
         <p>Hello <b>{student_name}</b>,</p>
         <p>New <b>ABSENT</b> attendance records were detected on your portal account:</p>
         <ul>{rows_html}</ul>
-        <p style="color: #94a3b8; font-size: 0.9rem;">If this was marked by mistake, open Ultra Portal and use the <b>1-Click Dispute Generator</b>.</p>
+        <p style="color: #94a3b8; font-size: 0.9rem;">If this was marked by mistake, open Krono and use the <b>1-Click Dispute Generator</b>.</p>
     </div>
     """
 
@@ -115,7 +115,7 @@ def send_absent_email(to_email, student_name, absent_list, smtp_user=None, smtp_
                 "https://api.resend.com/emails",
                 headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
                 json={
-                    "from": os.environ.get("RESEND_FROM_EMAIL", "Ultra Portal <onboarding@resend.dev>"),
+                    "from": os.environ.get("RESEND_FROM_EMAIL", "Krono <onboarding@resend.dev>"),
                     "to": [to_email],
                     "subject": f"⚠️ Attendance Alert: Marked ABSENT ({len(absent_list)} Lecture)",
                     "html": html_body

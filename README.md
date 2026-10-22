@@ -1,6 +1,6 @@
-# ⚡ Ultra Portal — Student Attendance Intelligence & Analytics
+# ⚡ Krono — Student Attendance Intelligence & Workspace (v2.7)
 
-An advanced, responsive, and mobile-ready college student attendance dashboard with attendance simulation, mass-bunk planning, interactive history calendar, dispute generator, and absent alerts.
+A flagship, studio-grade student workspace with pitch-black OLED dark mode, paper-white light mode, real-time timetable synchronization, mass-bunk planning, interactive history calendar, dispute generator, and absent alerts.
 
 ![Python](https://img.shields.io/badge/Python-3.12-38bdf8?style=flat-square&logo=python)
 ![Flask](https://img.shields.io/badge/Flask-3.x-22c55e?style=flat-square&logo=flask)

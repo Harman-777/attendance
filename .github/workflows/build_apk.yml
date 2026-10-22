@@ -71,17 +71,18 @@ jobs:
         run: |
           mkdir -p static/apk
           cp android_app/app/build/outputs/apk/release/*.apk static/apk/UltraPortal.apk
-          ls -la static/apk/UltraPortal.apk
+          cp android_app/app/build/outputs/apk/release/*.apk static/apk/Krono.apk
+          ls -la static/apk/
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f static/apk/UltraPortal.apk
-          git commit -m "chore: update compiled UltraPortal.apk [skip ci]" || exit 0
+          git add -f static/apk/UltraPortal.apk static/apk/Krono.apk
+          git commit -m "chore: update compiled Krono & UltraPortal APKs [skip ci]" || exit 0
           git pull --rebase origin main
           git push origin main
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UltraPortal-Release-APK
-          path: static/apk/UltraPortal.apk
+          name: Krono-Release-APK
+          path: static/apk/Krono.apk
           retention-days: 30

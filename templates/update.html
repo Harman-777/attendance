@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ultra Portal Update Center — v{{ app_version }}</title>
+    <title>Krono Update Center — v{{ app_version }}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/icons/krono-logo.svg">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <style>
@@ -140,24 +141,24 @@
 <body>
     <div class="update-card">
         <span class="update-badge">⚡ OFFICIAL UPDATE CENTER</span>
-        <h1 class="update-title">Ultra Portal v{{ app_version }}</h1>
+        <h1 class="update-title">Krono v{{ app_version }}</h1>
         <p class="update-desc">
             An updated signed Android APK is ready with native background auto-updates, faster timetable sync, and direct WhatsApp mobile integration.
         </p>
 
         <div class="changelog-box">
-            <b>✨ What's New in v{{ app_version }}:</b>
+            <b>✨ What's New in Krono v{{ app_version }}:</b>
             <ul>
-                <li>⚡ Native Android DownloadManager &amp; 1-Click update system</li>
-                <li>📲 Direct WhatsApp mobile app launch (no web QR code)</li>
-                <li>📤 System Share Drawer with direct download link</li>
-                <li>🎯 Welcome header streamlined to Attendance tab only</li>
-                <li>👤 Full 15-field official student profile instant extraction</li>
+                <li>⚡ Flagship rebrand to Krono with studio-grade geometric chevron logo</li>
+                <li>🌓 Dual Theme System: Pitch-Black OLED Dark + Paper-White Light Mode</li>
+                <li>🎨 1.5px / 1.75px crisp Lucide vector line icons replacing all emojis</li>
+                <li>📱 Native Android status bar &amp; navigation bar theme synchronization</li>
+                <li>📊 Monospace tabular figures for attendance percentages &amp; SGPA</li>
             </ul>
         </div>
 
-        <a href="/download/UltraPortal.apk" id="btn-direct-download" class="btn-action btn-primary" download>
-            ⬇️ Download UltraPortal.apk (~2.5 MB)
+        <a href="/download/Krono.apk" id="btn-direct-download" class="btn-action btn-primary" download>
+            ⬇️ Download Krono.apk (~2.5 MB)
         </a>
 
         <button type="button" id="btn-copy-update-link" class="btn-action btn-secondary" onclick="copyUpdateLink()">
@@ -170,13 +171,13 @@
 
         <p id="copy-status" class="copy-confirm"></p>
 
-        <a href="/" class="btn-return">← Back to Ultra Portal</a>
+        <a href="/" class="btn-return">← Back to Krono</a>
     </div>
 
     <script>
         const EXTERNAL_APK_DOWNLOAD_URL = "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk";
         const isApk = (window.AndroidApp !== undefined) || (navigator.userAgent && (navigator.userAgent.includes("UltraPortalApp") || /; wv\)/i.test(navigator.userAgent)));
-        const downloadUrl = isApk ? EXTERNAL_APK_DOWNLOAD_URL : (window.location.origin + "/download/UltraPortal.apk");
+        const downloadUrl = isApk ? EXTERNAL_APK_DOWNLOAD_URL : (window.location.origin + "/download/Krono.apk");
 
         function copyUpdateLink() {
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -201,12 +202,12 @@
         }
 
         function shareUpdateLink() {
-            const msg = "⚡ Download Ultra Portal v{{ app_version }} APK: " + EXTERNAL_APK_DOWNLOAD_URL;
+            const msg = "⚡ Download Krono v{{ app_version }} APK: " + EXTERNAL_APK_DOWNLOAD_URL;
             if (window.AndroidApp && typeof window.AndroidApp.shareApp === "function") {
                 window.AndroidApp.shareApp(msg, EXTERNAL_APK_DOWNLOAD_URL);
             } else if (navigator.share) {
                 navigator.share({
-                    title: "Ultra Portal v{{ app_version }} Update",
+                    title: "Krono v{{ app_version }} Update",
                     text: msg,
                     url: EXTERNAL_APK_DOWNLOAD_URL
                 }).catch(function () {});

@@ -4,12 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#090d16">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/svg+xml" href="/static/icons/krono-logo.svg">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <link rel="stylesheet" href="/static/app_hub.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/style.css?v={{ app_version }}">
-    <title>Ultra Student Workspace</title>
+    <title>Krono — Student Workspace</title>
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem("krono_theme") || "dark";
+            document.documentElement.setAttribute("data-theme", savedTheme);
+        })();
+    </script>
 </head>
 
 <body>
@@ -22,61 +29,117 @@
     <!-- Mobile Top Navigation Header -->
     <header class="mobile-top-bar">
         <div class="mobile-brand">
-            <span class="mobile-brand-icon">⚡</span>
+            <svg class="krono-brand-mark" width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="kronoBrandGradMobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#60A5FA" />
+                        <stop offset="100%" stop-color="#2563EB" />
+                    </linearGradient>
+                </defs>
+                <rect width="100" height="100" rx="24" fill="#09090B" stroke="#222228" stroke-width="3"/>
+                <rect x="22" y="22" width="13" height="56" rx="6.5" fill="#FAFAFA" />
+                <path d="M 41 53 L 66 28 C 68.5 25.5 72.5 25.5 75 28 C 77.5 30.5 77.5 34.5 75 37 L 53 59 C 51 61 47 61 45 59 Z" fill="url(#kronoBrandGradMobile)" />
+                <path d="M 45 44 L 75 74 C 77.5 76.5 77.5 80.5 75 83 C 72.5 85.5 68.5 85.5 66 83 L 41 58 C 39 56 39 52 41 50 Z" fill="url(#kronoBrandGradMobile)" />
+            </svg>
             <div class="mobile-brand-text">
-                <div class="mobile-app-title">Ultra Portal <span class="app-badge">v{{ app_version }}</span></div>
+                <div class="mobile-app-title">Krono <span class="app-badge">v{{ app_version }}</span></div>
                 <div class="mobile-student-sub"><span class="student-name">{{ data.student_name }}</span> • {{ data.student_id }}</div>
             </div>
         </div>
         <div class="mobile-actions">
-            <button type="button" class="mobile-icon-btn" onclick="openUltraAppModal()" title="Get Mobile App / Share" aria-label="Get Mobile App" style="color: #38bdf8; font-size: 0.95rem;">📲</button>
-            <button type="button" class="mobile-icon-btn trigger-export-pdf" title="Export PDF Report"
-                aria-label="Export PDF">📄</button>
-            <a href="{% if is_admin_view %}/admin{% else %}/logout{% endif %}" class="mobile-icon-btn mobile-logout" title="{% if is_admin_view %}Return to Admin{% else %}Logout{% endif %}" aria-label="Logout">{% if is_admin_view %}◀{% else %}🚪{% endif %}</a>
+            <button type="button" class="mobile-icon-btn krono-theme-toggle" onclick="toggleKronoTheme()" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+                <svg class="theme-sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                <svg class="theme-moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            </button>
+            <button type="button" class="mobile-icon-btn" onclick="openUltraAppModal()" title="Get Mobile App / Share" aria-label="Get Mobile App">
+                <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            </button>
+            <button type="button" class="mobile-icon-btn trigger-export-pdf" title="Export PDF Report" aria-label="Export PDF">
+                <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </button>
+            <a href="{% if is_admin_view %}/admin{% else %}/logout{% endif %}" class="mobile-icon-btn mobile-logout" title="{% if is_admin_view %}Return to Admin{% else %}Logout{% endif %}" aria-label="Logout">
+                {% if is_admin_view %}
+                <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                {% else %}
+                <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                {% endif %}
+            </a>
         </div>
     </header>
 
     <aside id="sidebar-nav">
         <div class="brand-box">
-            <h2>⚡ Ultra Portal</h2>
-            <span class="app-badge">v{{ app_version }}</span>
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                <svg class="krono-brand-mark" width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="kronoBrandGradSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#60A5FA" />
+                            <stop offset="100%" stop-color="#2563EB" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="100" height="100" rx="24" fill="#09090B" stroke="#222228" stroke-width="3"/>
+                    <rect x="22" y="22" width="13" height="56" rx="6.5" fill="#FAFAFA" />
+                    <path d="M 41 53 L 66 28 C 68.5 25.5 72.5 25.5 75 28 C 77.5 30.5 77.5 34.5 75 37 L 53 59 C 51 61 47 61 45 59 Z" fill="url(#kronoBrandGradSidebar)" />
+                    <path d="M 45 44 L 75 74 C 77.5 76.5 77.5 80.5 75 83 C 72.5 85.5 68.5 85.5 66 83 L 41 58 C 39 56 39 52 41 50 Z" fill="url(#kronoBrandGradSidebar)" />
+                </svg>
+                <h2 style="margin: 0; font-size: 1.32rem; font-weight: 800; letter-spacing: -0.02em;">Krono</h2>
+                <span class="app-badge">v{{ app_version }}</span>
+            </div>
+            <button type="button" class="krono-theme-toggle" onclick="toggleKronoTheme()" aria-label="Toggle theme" title="Toggle Light/Dark Theme">
+                <svg class="theme-sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                <svg class="theme-moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            </button>
         </div>
 
         <nav class="nav-container">
             <button type="button" class="nav-btn active" data-target="tab-attendance">
-                <span class="nav-icon">📊</span>
+                <span class="nav-icon"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
                 <span class="nav-label">Attendance<span class="nav-sublabel"> & Simulator</span></span>
             </button>
             <button type="button" class="nav-btn" data-target="tab-vacation">
-                <span class="nav-icon">🏖️</span>
+                <span class="nav-icon"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.95 16A6 6 0 0 0 8.05 16"/><path d="M2 16h20"/><path d="M4 20h16"/></svg></span>
                 <span class="nav-label">Vacation<span class="nav-sublabel"> Planner</span></span>
             </button>
             <button type="button" class="nav-btn" data-target="tab-calendar">
-                <span class="nav-icon">📅</span>
+                <span class="nav-icon"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg></span>
                 <span class="nav-label">Calendar<span class="nav-sublabel"> History</span></span>
             </button>
             <button type="button" class="nav-btn" data-target="tab-results">
-                <span class="nav-icon">🏆</span>
+                <span class="nav-icon"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
                 <span class="nav-label">Results<span class="nav-sublabel"> & Analytics</span></span>
             </button>
             <button type="button" class="nav-btn" data-target="tab-alerts">
-                <span class="nav-icon">🔔</span>
+                <span class="nav-icon"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
                 <span class="nav-label">Alerts<span class="nav-sublabel"> & Dispute</span></span>
             </button>
             <button type="button" class="nav-btn" data-target="tab-fees">
-                <span class="nav-icon">💳</span>
+                <span class="nav-icon"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></span>
                 <span class="nav-label">Fee<span class="nav-sublabel"> Ledger</span></span>
             </button>
             <button type="button" class="nav-btn" data-target="tab-profile">
-                <span class="nav-icon">👤</span>
+                <span class="nav-icon"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
                 <span class="nav-label">Profile<span class="nav-sublabel"> & Security</span></span>
             </button>
         </nav>
 
         <div class="sidebar-footer">
-            <button type="button" class="btn-app-hub-sidebar" onclick="openUltraAppModal()">📲 Get Mobile App / Share</button>
-            <button type="button" class="btn-pdf trigger-export-pdf" id="btn-export-pdf">📄 Export PDF Report</button>
-            <a href="{% if is_admin_view %}/admin{% else %}/logout{% endif %}" class="logout-btn">{% if is_admin_view %}◀ Return to Admin{% else %}🚪 Logout{% endif %}</a>
+            <button type="button" class="btn-app-hub-sidebar" onclick="openUltraAppModal()">
+                <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                <span>Get Mobile App / Share</span>
+            </button>
+            <button type="button" class="btn-pdf trigger-export-pdf" id="btn-export-pdf">
+                <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <span>Export PDF Report</span>
+            </button>
+            <a href="{% if is_admin_view %}/admin{% else %}/logout{% endif %}" class="logout-btn">
+                {% if is_admin_view %}
+                <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                <span>Return to Admin</span>
+                {% else %}
+                <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Logout</span>
+                {% endif %}
+            </a>
         </div>
     </aside>
 
@@ -116,9 +179,9 @@
                     <div class="sync-status-row" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
                         <button type="button" id="sync-status-pill" class="sync-pill {% if data.is_offline %}sync-offline{% else %}sync-live{% endif %}" onclick="window.triggerRealtimeAttendanceSync(true)" title="Tap to sync live attendance from portal">
                             {% if data.is_offline %}
-                            <span class="sync-dot">⚠️</span> <span class="sync-pill-text">Offline Snapshot (<span id="sync-time-badge">{{ data.last_synced }}</span>)</span> <span class="sync-spin-icon">🔄</span>
+                            <span class="sync-dot">⚠️</span> <span class="sync-pill-text">Offline Snapshot (<span id="sync-time-badge">{{ data.last_synced }}</span>)</span> <span class="sync-spin-icon"><svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></span>
                             {% else %}
-                            <span class="sync-dot">●</span> <span class="sync-pill-text">Live Synced (<span id="sync-time-badge">{{ data.last_synced }}</span>)</span> <span class="sync-spin-icon">🔄</span>
+                            <span class="sync-dot">●</span> <span class="sync-pill-text">Live Synced (<span id="sync-time-badge">{{ data.last_synced }}</span>)</span> <span class="sync-spin-icon"><svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></span>
                             {% endif %}
                         </button>
                     </div>
@@ -140,7 +203,7 @@
             <!-- Today's Live Attendance Banner -->
             <div class="today-banner" id="today-live-banner">
                 <div class="today-header">
-                    <h3 style="font-size: 1.12rem; color: #38bdf8;">⚡ Today's Live Attendance</h3>
+                    <h3 style="font-size: 1.12rem; color: var(--accent-primary); display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Today's Live Attendance</h3>
                     <span id="today-date-badge" style="color: #9ca3af; font-size: 0.88rem; font-weight: 600;">{{ data.today_date }}</span>
                 </div>
                 <div id="today-live-attendance-body" class="today-attendance-body">
@@ -192,7 +255,7 @@
             <!-- Intelligence Control Bar: Custom Target Slider & Medical Leave Mode -->
             <div class="intel-bar">
                 <div class="slider-group">
-                    <label for="target-slider" style="font-weight: 700; color: #e2e8f0;">🎯 Target Attendance:</label>
+                    <label for="target-slider" style="font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;"><svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Target Attendance:</label>
                     <input type="range" id="target-slider" min="60" max="90" step="5" value="75">
                     <span class="target-badge" id="target-label">75%</span>
                 </div>
@@ -279,7 +342,7 @@
         <!-- 3. INTERACTIVE CALENDAR TAB -->
         <div id="tab-calendar" class="tab-panel">
             <div class="cal-header-bar">
-                <h2 style="font-size: 1.25rem;">📅 Subject & Day-Wise Attendance History</h2>
+                <h2 style="font-size: 1.25rem; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> Subject &amp; Day-Wise Attendance History</h2>
                 <div class="cal-filter-container">
                     <label for="cal-subject-filter" class="cal-filter-label">Filter Subject:</label>
                     <select class="sem-dropdown cal-filter-select" id="cal-subject-filter">
@@ -836,7 +899,7 @@
                 <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">🔐 In-App Portal Password Changer
                 </h3>
                 <p style="color: #9ca3af; font-size: 0.88rem; margin-bottom: 16px;">Update your official
-                    <code>agclms.in</code> password directly from Ultra Portal:</p>
+                    <code>agclms.in</code> password directly from Krono:</p>
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <input type="password" id="cp-old" class="form-input" placeholder="Current Portal Password">
                     <input type="password" id="cp-new" class="form-input" placeholder="New Password">
@@ -868,20 +931,23 @@
     </script>
     <script src="/static/app.js?v={{ app_version }}"></script>
 
-    <!-- Ultra Mobile App Hub & Share Modal -->
+    <!-- Krono Mobile App Hub & Share Modal -->
     <div id="ultra-app-modal" class="app-modal-overlay">
         <div class="app-modal-card">
             <button type="button" class="app-modal-close" onclick="closeUltraAppModal()" aria-label="Close modal">✖</button>
             <div class="app-modal-header">
-                <span class="app-modal-badge">📱 OFFICIAL APP HUB</span>
-                <h2 class="app-modal-title">⚡ Ultra Mobile Workspace</h2>
+                <span class="app-modal-badge">OFFICIAL APP HUB</span>
+                <h2 class="app-modal-title">Krono Mobile Workspace</h2>
                 <p class="app-modal-subtitle">Dual-Install WebAPK, Raw Android APK &amp; Campus Share Pass</p>
             </div>
 
             <!-- Option 1: 1-Click Instant Install (Recommended) -->
             <div class="app-hub-section featured">
                 <div class="section-head">
-                    <div class="section-title">⚡ 1-Click Instant Install</div>
+                    <div class="section-title">
+                        <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        1-Click Instant Install
+                    </div>
                     <span class="section-badge-green">RECOMMENDED</span>
                 </div>
                 <p class="section-desc">Zero security warnings • Direct Chrome/Android WebAPK • Instant home screen launcher &amp; auto-updates.</p>
@@ -898,14 +964,17 @@
             <!-- Option 2: Download Raw Android APK -->
             <div class="app-hub-section">
                 <div class="section-head">
-                    <div class="section-title">📦 Download Raw Android APK <span id="apk-version-badge" style="font-size: 0.75rem; margin-left: 6px; font-weight: 600;"></span></div>
+                    <div class="section-title">
+                        <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                        Download Raw Android APK <span id="apk-version-badge" style="font-size: 0.75rem; margin-left: 6px; font-weight: 600;"></span>
+                    </div>
                     <span class="section-badge-purple">NATIVE APK (v{{ app_version }})</span>
                 </div>
                 <p class="section-desc">Direct signed Android APK (~2.5 MB). Full offline shell &amp; hardware back navigation.</p>
-                <a href="/download/UltraPortal.apk" class="btn-hub-action btn-hub-purple" download onclick="triggerApkUpdate();">
-                    ⬇️ Download UltraPortal.apk
+                <a href="/download/Krono.apk" class="btn-hub-action btn-hub-purple" download onclick="triggerApkUpdate();">
+                    ⬇️ Download Krono.apk
                 </a>
-                <p style="font-size: 0.72rem; color: #94a3b8; margin-top: 8px; line-height: 1.4;">
+                <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; line-height: 1.4;">
                     💡 <i>If prompted by Android/Chrome ("File might be harmful"), tap <b>"Download anyway"</b> and <b>"Install"</b>. Or use Option 1 above for instant zero-warning install.</i>
                 </p>
             </div>
@@ -913,7 +982,10 @@
             <!-- Option 3: Viral Share with Classmates -->
             <div class="app-hub-section">
                 <div class="section-head">
-                    <div class="section-title">🚀 Share with Classmates</div>
+                    <div class="section-title">
+                        <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        Share with Classmates
+                    </div>
                 </div>
                 <p class="section-desc">Help friends track live attendance, calculate safe bunks, and beat 75% short-attendance.</p>
                 <div class="share-grid">
@@ -940,7 +1012,7 @@
                 <p class="section-desc">Let friends scan this QR code directly from your phone or laptop screen.</p>
                 <div class="qr-container-box">
                     <div class="qr-code-frame" id="app-qr-code"></div>
-                    <div class="qr-label">Scan to open Ultra Portal instantly</div>
+                    <div class="qr-label">Scan to open Krono instantly</div>
                 </div>
             </div>
         </div>

@@ -1,3 +1,43 @@
+// ==========================================================================
+// Krono Theme Controller (OLED Dark + Paper-White Dual System)
+// ==========================================================================
+window.initKronoTheme = function () {
+    var theme = localStorage.getItem("krono_theme") || "dark";
+    document.documentElement.setAttribute("data-theme", theme);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+        meta.setAttribute("content", theme === "light" ? "#FAFAFA" : "#000000");
+    }
+    if (window.AndroidApp && typeof window.AndroidApp.setSystemBarTheme === "function") {
+        try {
+            window.AndroidApp.setSystemBarTheme(theme);
+        } catch (e) {}
+    }
+};
+
+window.toggleKronoTheme = function () {
+    var cur = document.documentElement.getAttribute("data-theme") || "dark";
+    var next = cur === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    try {
+        localStorage.setItem("krono_theme", next);
+    } catch (e) {}
+
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+        meta.setAttribute("content", next === "light" ? "#FAFAFA" : "#000000");
+    }
+
+    if (window.AndroidApp && typeof window.AndroidApp.setSystemBarTheme === "function") {
+        try {
+            window.AndroidApp.setSystemBarTheme(next);
+        } catch (e) {}
+    }
+};
+
+// Auto initialize immediately
+window.initKronoTheme();
+
 document.addEventListener("DOMContentLoaded", function () {
     const rawData = document.getElementById("portal-data-json").textContent;
     const portalData = JSON.parse(rawData || "{}");

@@ -17,7 +17,7 @@ self.addEventListener("fetch", function (event) {
 
 self.addEventListener("push", function (event) {
     let payload = {
-        title: "⚠️ Ultra Portal Attendance Alert",
+        title: "⚠️ Krono Attendance Alert",
         body: "New attendance update detected on your portal account.",
         url: "/dashboard"
     };

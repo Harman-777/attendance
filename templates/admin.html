@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultra Portal — Master Admin Console</title>
+    <title>Krono — Master Admin Console</title>
+    <link rel="icon" type="image/svg+xml" href="/static/icons/krono-logo.svg">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
         body { background: #090d16; color: #f8fafc; padding: 24px; min-height: 100vh; }
@@ -251,7 +252,21 @@
     </div>
     {% endif %}
     <div class="topbar">
-        <h1 style="font-size: 1.25rem;">⚡ Ultra Portal — Developer Console</h1>
+        <h1 style="font-size: 1.25rem; display: flex; align-items: center; gap: 10px;">
+            <svg class="krono-brand-mark" width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="kronoAdminGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#60A5FA" />
+                        <stop offset="100%" stop-color="#2563EB" />
+                    </linearGradient>
+                </defs>
+                <rect width="100" height="100" rx="24" fill="#09090B" stroke="#222228" stroke-width="3"/>
+                <rect x="22" y="22" width="13" height="56" rx="6.5" fill="#FAFAFA" />
+                <path d="M 41 53 L 66 28 C 68.5 25.5 72.5 25.5 75 28 C 77.5 30.5 77.5 34.5 75 37 L 53 59 C 51 61 47 61 45 59 Z" fill="url(#kronoAdminGrad)" />
+                <path d="M 45 44 L 75 74 C 77.5 76.5 77.5 80.5 75 83 C 72.5 85.5 68.5 85.5 66 83 L 41 58 C 39 56 39 52 41 50 Z" fill="url(#kronoAdminGrad)" />
+            </svg>
+            <span>Krono — Developer Console</span>
+        </h1>
         <div class="topbar-actions">
             <!-- Admin View Live Student Attendance & Google-Style Student Search -->
             <div class="admin-view-wrap">
@@ -380,7 +395,7 @@
                 {% endfor %}
             </select>
             <label style="font-size:0.8rem; color:#cbd5e1;">Announcement Title</label>
-            <input type="text" id="push-title" value="⚡ Ultra Portal Update" style="margin:6px 0 12px;">
+            <input type="text" id="push-title" value="⚡ Krono Update" style="margin:6px 0 12px;">
             <label style="font-size:0.8rem; color:#cbd5e1;">Message Body</label>
             <textarea id="push-body" rows="3" placeholder="Enter announcement message for students..." style="margin:6px 0 12px;"></textarea>
             <button class="btn btn-purple" style="width:100%; padding:11px;" onclick="broadcastPush()">🚀 Send In-App Banner & Push Alert</button>

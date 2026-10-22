@@ -336,3 +336,64 @@
         padding: 9px;
     }
 }
+
+
+/* Theme Adaptation for App Hub Modal */
+[data-theme="light"] .app-modal-card {
+    background: #FFFFFF;
+    border: 1px solid #E4E4E7;
+    color: #09090B;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15), 0 0 30px rgba(37, 99, 235, 0.08);
+}
+
+[data-theme="light"] .app-modal-card .app-modal-title {
+    color: #09090B;
+}
+
+[data-theme="light"] .app-modal-card .app-modal-subtitle,
+[data-theme="light"] .app-modal-card .section-desc {
+    color: #52525B;
+}
+
+[data-theme="light"] .app-hub-section {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+}
+
+[data-theme="light"] .app-hub-section.featured {
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+}
+
+[data-theme="light"] .app-hub-section .section-title {
+    color: #1E293B;
+}
+
+[data-theme="light"] .btn-share-item {
+    background: #FFFFFF;
+    color: #0F172A;
+    border-color: #E2E8F0;
+}
+
+[data-theme="light"] .btn-share-item:hover {
+    background: #F1F5F9;
+}
+
+[data-theme="light"] .app-modal-close {
+    background: #F1F5F9;
+    color: #64748B;
+}
+
+[data-theme="light"] .app-modal-close:hover {
+    background: #DC2626;
+    color: #FFFFFF;
+}
+
+[data-theme="light"] .qr-container-box {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+}
+
+[data-theme="light"] .qr-label {
+    color: #64748B;
+}
