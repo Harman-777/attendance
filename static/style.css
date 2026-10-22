@@ -8,19 +8,19 @@
 
 :root,
 [data-theme="dark"] {
-    --bg-canvas: #09090B;
-    --bg-sidebar: #0E0E12;
-    --bg-card: #16161D;
-    --bg-card-hover: #1C1C26;
-    --bg-elevated: #20202B;
-    --border-subtle: #2E2E3A;
-    --border-strong: #3E3E4E;
-    --border-focus: #3B82F6;
-    --text-primary: #FAFAFA;
-    --text-secondary: #A1A1AA;
-    --text-muted: #71717A;
-    --accent-primary: #3B82F6;
-    --accent-hover: #60A5FA;
+    --bg-canvas: #090B0E;
+    --bg-sidebar: #0E1015;
+    --bg-card: #131722;
+    --bg-card-hover: #191E2D;
+    --bg-elevated: #1A202E;
+    --border-subtle: #242B3C;
+    --border-strong: #333D56;
+    --border-focus: #38BDF8;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --accent-primary: #38BDF8;
+    --accent-hover: #0EA5E9;
     --status-present-bg: rgba(16, 185, 129, 0.12);
     --status-present-border: rgba(16, 185, 129, 0.35);
     --status-present-text: #34D399;
@@ -46,49 +46,49 @@
     --radius-lg: 14px;
     --radius-md: 10px;
     --radius-sm: 8px;
-    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 }
 
 [data-theme="light"] {
-    --bg-canvas: #F1F5F9;
+    --bg-canvas: #E4E8EE;
     --bg-sidebar: #FFFFFF;
     --bg-card: #FFFFFF;
     --bg-card-hover: #F8FAFC;
-    --bg-elevated: #F8FAFC;
-    --border-subtle: #CBD5E1;
-    --border-strong: #94A3B8;
+    --bg-elevated: #EEF2F6;
+    --border-subtle: #D5DBE4;
+    --border-strong: #BDC7D5;
     --border-focus: #2563EB;
-    --text-primary: #09090B;
-    --text-secondary: #52525B;
-    --text-muted: #71717A;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #64748B;
     --accent-primary: #2563EB;
     --accent-hover: #1D4ED8;
     --status-present-bg: #ECFDF5;
-    --status-present-border: #A7F3D0;
-    --status-present-text: #059669;
+    --status-present-border: #6EE7B7;
+    --status-present-text: #047857;
     --status-absent-bg: #FEF2F2;
-    --status-absent-border: #FECACA;
-    --status-absent-text: #DC2626;
+    --status-absent-border: #FCA5A5;
+    --status-absent-text: #B91C1C;
 
     /* Legacy & Semantic Mappings */
     --bg-main: var(--bg-canvas);
     --bg-surface: var(--bg-elevated);
     --border-color: var(--border-subtle);
-    --border-light: var(--border-subtle);
+    --border-light: var(--border-strong);
     --cyan: var(--accent-primary);
     --cyan-hover: var(--accent-hover);
     --green: var(--status-present-text);
     --green-bg: var(--status-present-bg);
     --red: var(--status-absent-text);
     --red-bg: var(--status-absent-bg);
-    --amber: #D97706;
+    --amber: #B45309;
     --amber-bg: #FEF3C7;
     --safe-bottom: env(safe-area-inset-bottom, 12px);
     --sidebar-width: 270px;
     --radius-lg: 14px;
     --radius-md: 10px;
     --radius-sm: 8px;
-    --card-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    --card-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 * {
@@ -358,7 +358,7 @@ main {
 
 .header-student-info h1 {
     font-size: clamp(1.3rem, 2.5vw, 1.7rem);
-    color: white;
+    color: var(--text-primary);
     font-weight: 800;
     margin-bottom: 6px;
 }
@@ -469,8 +469,8 @@ main {
 
 /* Header Stats Card */
 .header-stats-card {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(17, 24, 39, 0.9) 100%);
-    border: 1px solid rgba(56, 189, 248, 0.25);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-md);
     padding: 16px 22px;
     text-align: right;
@@ -634,11 +634,11 @@ main {
     cursor: pointer;
     font-weight: 600;
     font-size: 0.92rem;
-    color: #cbd5e1;
-    background: var(--bg-surface);
+    color: var(--text-primary);
+    background: var(--bg-elevated);
     padding: 10px 16px;
     border-radius: 10px;
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--border-strong);
     transition: 0.15s;
 }
 
@@ -776,17 +776,22 @@ main {
 }
 
 .sub-card.danger-border {
-    border-color: rgba(239, 68, 68, 0.6);
+    border-top: 3.5px solid #EF4444 !important;
 }
 
 .sub-card.warn-border {
-    border-color: rgba(245, 158, 11, 0.6);
+    border-top: 3.5px solid #F59E0B !important;
+}
+
+.sub-card.safe-border {
+    border-top: 3.5px solid #10B981 !important;
 }
 
 .sub-card h4 {
     font-size: 1.1rem;
     margin-bottom: 8px;
-    color: white;
+    color: var(--text-primary);
+    font-weight: 700;
     line-height: 1.35;
     word-break: break-word;
 }
@@ -820,23 +825,38 @@ main {
 .impact-strip {
     display: flex;
     justify-content: space-between;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
+    font-weight: 600;
     color: var(--text-secondary);
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid var(--border-color);
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle) !important;
+    background: transparent !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
     flex-wrap: wrap;
     gap: 6px;
 }
 
+.impact-att {
+    color: var(--status-present-text);
+}
+
+.impact-skip {
+    color: var(--status-absent-text);
+}
+
 .sim-box {
     background: var(--bg-surface);
-    padding: 12px;
-    border-radius: 8px;
+    padding: 12px 14px;
+    border-radius: 10px;
     margin-top: 12px;
     font-size: 0.88rem;
-    color: #e2e8f0;
+    color: var(--text-primary);
     font-weight: 600;
+    line-height: 1.45;
 }
 
 .btn-group {
@@ -914,7 +934,7 @@ main {
 .cal-nav-btn {
     background: var(--bg-surface);
     border: 1px solid var(--border-light);
-    color: white;
+    color: var(--text-primary);
     padding: 8px 14px;
     border-radius: 8px;
     cursor: pointer;
@@ -998,10 +1018,10 @@ th {
 .sem-dropdown, .form-input {
     padding: 11px 14px;
     background: var(--bg-surface);
-    color: white;
+    color: var(--text-primary);
     border: 1px solid var(--border-light);
     border-radius: 8px;
-    font-size: 1rem; /* 16px minimum prevents iOS Safari auto-zoom */
+    font-size: 1rem;
     font-weight: 600;
     outline: none;
     box-sizing: border-box;
@@ -1126,7 +1146,7 @@ th {
 
 .profile-name {
     font-size: 1.45rem;
-    color: white;
+    color: var(--text-primary);
     margin-bottom: 4px;
 }
 
@@ -1194,7 +1214,7 @@ th {
     width: 100%;
     height: 150px;
     background: var(--bg-main);
-    color: #e2e8f0;
+    color: var(--text-primary);
     border: 1px solid var(--border-light);
     border-radius: 10px;
     padding: 12px;
@@ -1244,7 +1264,7 @@ th {
     .mobile-app-title {
         font-size: 1.1rem;
         font-weight: 800;
-        color: white;
+        color: var(--text-primary);
         display: flex;
         align-items: center;
         gap: 6px;
@@ -1705,6 +1725,58 @@ input:focus, select:focus, textarea:focus {
     border-color: #FECACA;
 }
 
+[data-theme="light"] .badge-present {
+    background: #ECFDF5;
+    color: #047857;
+    border-color: #6EE7B7;
+}
+
+[data-theme="light"] .badge-absent {
+    background: #FEF2F2;
+    color: #B91C1C;
+    border-color: #FCA5A5;
+}
+
+[data-theme="light"] .nav-btn:hover {
+    background: #EEF2F6;
+    color: #0F172A;
+}
+
+[data-theme="light"] .nav-btn.active {
+    background: #EEF2F6;
+    color: #2563EB;
+    border-left: 3px solid #2563EB;
+}
+
+[data-theme="light"] .today-pill {
+    background: #F8FAFC !important;
+    border: 1px solid #D5DBE4 !important;
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .sim-box {
+    background: #F8FAFC !important;
+    border: 1px solid #D5DBE4 !important;
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .toggle-label {
+    background: #F8FAFC !important;
+    border: 1px solid #D5DBE4 !important;
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .target-badge {
+    background: #F8FAFC !important;
+    border: 1px solid #D5DBE4 !important;
+    color: #2563EB !important;
+}
+
+[data-theme="light"] .header-stats-card {
+    background: #FFFFFF !important;
+    border: 1px solid #D5DBE4 !important;
+}
+
 [data-theme="light"] .sync-pill {
     background: #F1F5F9;
     border-color: #CBD5E1;
@@ -1789,6 +1861,7 @@ input:focus, select:focus, textarea:focus {
 .card,
 .stat-card,
 .subject-card,
+.sub-card,
 .today-banner,
 .intel-bar,
 .header-stats-card,
@@ -1809,7 +1882,6 @@ input:focus, select:focus, textarea:focus {
 .sim-box,
 .push-notice-box,
 .profile-item,
-.impact-strip,
 .target-badge,
 .vacation-input-row,
 .ultra-fb-field,

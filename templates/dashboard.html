@@ -204,7 +204,7 @@
             <div class="today-banner" id="today-live-banner">
                 <div class="today-header">
                     <h3 style="font-size: 1.12rem; color: var(--accent-primary); display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Today's Live Attendance</h3>
-                    <span id="today-date-badge" style="color: #9ca3af; font-size: 0.88rem; font-weight: 600;">{{ data.today_date }}</span>
+                    <span id="today-date-badge" style="color: var(--text-secondary); font-size: 0.88rem; font-weight: 600;">{{ data.today_date }}</span>
                 </div>
                 <div id="today-live-attendance-body" class="today-attendance-body">
                     {% if data.today_attendance %}
@@ -225,7 +225,7 @@
                         {% endfor %}
                     </div>
                     {% elif data.latest_attendance_records %}
-                    <p id="today-empty-msg" style="color: #9ca3af; font-size: 0.90rem; margin-bottom: 8px;">No lectures marked for today ({{ data.today_date }}) yet. Any new marks will trigger an instant alert.</p>
+                    <p id="today-empty-msg" style="color: var(--text-secondary); font-size: 0.90rem; margin-bottom: 8px;">No lectures marked for today ({{ data.today_date }}) yet. Any new marks will trigger an instant alert.</p>
                     <div style="font-size: 0.82rem; color: #38bdf8; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
                         <span><svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Last Uploaded on College Portal ({{ data.latest_attendance_date }}):</span>
                     </div>
@@ -246,7 +246,7 @@
                         {% endfor %}
                     </div>
                     {% else %}
-                    <p id="today-empty-msg" style="color: #9ca3af; font-size: 0.92rem;">No lectures marked for today ({{ data.today_date }}) yet.
+                    <p id="today-empty-msg" style="color: var(--text-secondary); font-size: 0.92rem;">No lectures marked for today ({{ data.today_date }}) yet.
                         Any new absent marks will trigger an instant alert.</p>
                     {% endif %}
                 </div>
@@ -267,7 +267,7 @@
 
             <div class="subject-grid">
                 {% for s in data.subjects %}
-                <div class="sub-card {% if s.danger_level == 'critical' %}danger-border{% elif s.danger_level == 'warning' %}warn-border{% endif %}"
+                <div class="sub-card {% if s.danger_level == 'critical' %}danger-border{% elif s.danger_level == 'warning' %}warn-border{% else %}safe-border{% endif %}"
                     data-idx="{{ loop.index0 }}" data-name="{{ s.name }}" data-present="{{ s.present }}"
                     data-total="{{ s.total }}" data-orig-p="{{ s.present }}" data-orig-t="{{ s.total }}">
                     <h4>{{ s.name }}</h4>
@@ -278,12 +278,12 @@
                         <div class="progress-fill" id="bar-{{ loop.index0 }}" data-pct="{{ s.pct }}"></div>
                     </div>
 
-                    <p style="color:#9ca3af; font-size:0.88rem;" id="count-{{ loop.index0 }}">Attended: <b>{{ s.present
+                    <p style="color:var(--text-secondary); font-size:0.88rem;" id="count-{{ loop.index0 }}">Attended: <b>{{ s.present
                             }}</b> / <b>{{ s.total }}</b> classes</p>
 
                     <div class="impact-strip">
-                        <span style="color: #4ade80;" id="next-att-{{ loop.index0 }}">↗ Next Attend: --%</span>
-                        <span style="color: #f87171;" id="next-skip-{{ loop.index0 }}">↘ Next Skip: --%</span>
+                        <span class="impact-att" id="next-att-{{ loop.index0 }}">↗ Next Attend: --%</span>
+                        <span class="impact-skip" id="next-skip-{{ loop.index0 }}">↘ Next Skip: --%</span>
                     </div>
 
                     <div class="sim-box" id="status-box-{{ loop.index0 }}">{{ s.status_msg }}</div>
@@ -304,13 +304,13 @@
         <div id="tab-vacation" class="tab-panel">
             <div class="card" style="margin-bottom: 24px;">
                 <h2 style="font-size: 1.3rem; color: var(--accent-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.95 16A6 6 0 0 0 8.05 16"/><path d="M2 16h20"/><path d="M4 20h16"/></svg> Multi-Day Vacation &amp; Mass-Bunk Planner</h2>
-                <p style="color: #9ca3af; font-size: 0.92rem; margin-bottom: 20px;">
+                <p style="color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 20px;">
                     Planning a trip or taking days off? Choose how many lectures per subject you plan to miss to see
                     your post-vacation standing across all subjects at once.
                 </p>
                 <div class="vacation-input-row">
                     <div>
-                        <label style="color: #cbd5e1; font-size: 0.88rem; font-weight: 600; margin-right: 8px;">Days /
+                        <label style="color: var(--text-secondary); font-size: 0.88rem; font-weight: 600; margin-right: 8px;">Days /
                             Lectures to Skip per Subject:</label>
                         <input type="number" id="vacation-days-input" class="form-input" value="3" min="1" max="30"
                             style="width: 90px;">
@@ -381,7 +381,7 @@
                 <div class="cal-card">
                     <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;" id="selected-date-title">Select
                         a Date</h3>
-                    <p style="color: #9ca3af; font-size: 0.86rem; margin-bottom: 18px;">Click any date on the calendar
+                    <p style="color: var(--text-secondary); font-size: 0.86rem; margin-bottom: 18px;">Click any date on the calendar
                         to inspect individual lectures or raise an absent dispute.</p>
                     <div id="selected-date-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
@@ -395,7 +395,7 @@
                 <!-- SGPA Trend Graph Card -->
                 <div class="card" id="sgpa-trend-card">
                     <h3 style="font-size: 1.15rem; color: var(--accent-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Semester SGPA Performance Trend</h3>
-                    <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 12px;">Automated grade-point
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px;">Automated grade-point
                         progression across published semesters</p>
                     {% if data.results %}
                     <div class="chart-row">
@@ -431,7 +431,7 @@
                         </div>
                         {% for sem in data.results %}
                             {% if sem.has_reappear %}
-                            <div style="color: #cbd5e1; margin-bottom: 4px;">
+                            <div style="color: var(--text-secondary); margin-bottom: 4px;">
                                 <b style="color: #fca5a5;">{{ sem.semester }}:</b>
                                 {% if sem.reappear_subjects %}
                                     Re-appear in <span style="color: #f87171; font-weight: 600;">{{ sem.reappear_subjects | join(', ') }}</span>
@@ -448,14 +448,14 @@
                     </div>
                     {% endif %}
                     {% else %}
-                    <p style="color: #9ca3af;">No semester charts available.</p>
+                    <p style="color: var(--text-secondary);">No semester charts available.</p>
                     {% endif %}
                 </div>
 
                 <!-- Target Grade Predictor Card -->
                 <div class="card">
                     <h3 style="font-size: 1.15rem; color: var(--accent-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Final Exam Target Grade Predictor</h3>
-                    <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 16px;">Enter your internal sessional
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px;">Enter your internal sessional
                         marks to see the exact external score needed:</p>
                     <div style="display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
                         <div style="flex: 1;">
@@ -484,7 +484,7 @@
                 <h2 style="font-size: 1.3rem;">Official Semester Marksheets</h2>
                 {% if data.results %}
                 <div>
-                    <label style="color: #9ca3af; margin-right: 10px; font-weight: 600;">Select Semester:</label>
+                    <label style="color: var(--text-secondary); margin-right: 10px; font-weight: 600;">Select Semester:</label>
                     <select class="sem-dropdown" id="sem-select">
                         {% for sem in data.results %}
                         <option value="sem-{{ sem.code }}" {% if loop.last %}selected{% endif %}>{{ sem.semester }}
@@ -537,14 +537,14 @@
                 <!-- Browser & Email Absent Alert Card -->
                 <div class="card">
                     <h3 style="font-size: 1.2rem; color: var(--accent-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> Instant Absent Notification Center</h3>
-                    <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 18px;">
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 18px;">
                         Get notified via Browser Push and Email whenever an <b>ABSENT</b> is marked on your portal.
                     </p>
 
                     <div class="push-notice-box">
                         <div>
                             <div style="font-weight: 700; font-size: 0.95rem;">Desktop / Mobile Browser Push</div>
-                            <div style="color: #9ca3af; font-size: 0.8rem;" id="push-status-text">Click enable to allow
+                            <div style="color: var(--text-secondary); font-size: 0.8rem;" id="push-status-text">Click enable to allow
                                 instant pop-up alerts</div>
                         </div>
                         <button type="button" class="btn-pdf" id="btn-enable-push"
@@ -555,7 +555,7 @@
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <hr style="border: none; border-top: 1px solid #1f2937; margin: 20px 0;">
                         <h4 style="font-size: 1rem; margin-bottom: 6px; color: var(--accent-primary); display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Cloud Password Vault (24/7 Auto-Sync &amp; 0.4s Instant Login)</h4>
-                        <p style="color: #9ca3af; font-size: 0.84rem; margin-bottom: 12px;">
+                        <p style="color: var(--text-secondary); font-size: 0.84rem; margin-bottom: 12px;">
                             Opt-in to store your password encrypted with AES-256 in Supabase so GitHub Actions can check
                             your attendance while you sleep.
                         </p>
@@ -686,7 +686,7 @@
                         <div style="margin-top: 18px; border-top: 1px solid #1e293b; padding-top: 14px;">
                             <h5 style="font-size: 0.86rem; color: #94a3b8; margin-bottom: 10px;">Your Submitted Feedback & Developer Replies:</h5>
                             {% for item in user_feedback %}
-                            <div style="background: #0b1120; border: 1px solid #1e293b; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;">
+                            <div style="background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #38bdf8; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
                                     <span><b>{{ item.category }}</b> • {{ item.rating }}/5 <span style="color:#64748b; margin-left:6px;">{{ (item.created_at or '')[:16].replace('T', ' ') }}</span></span>
                                     <span style="font-weight: 700; color: {% if item.status == 'Implemented' %}#4ade80{% elif item.status == 'Reviewed' %}#38bdf8{% else %}#fbbf24{% endif %};">
@@ -761,7 +761,7 @@
                 <div class="card">
                     <h3 style="font-size: 1.2rem; color: var(--accent-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg> Wrong-Absent Dispute Generator
                     </h3>
-                    <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 16px;">
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">
                         Marked absent by mistake? Generate an official correction request addressed to <b>{{
                             data.incharge }}</b> with your exact Roll Number and lecture date.
                     </p>
@@ -823,7 +823,7 @@
                 </div>
                 {% endfor %}
             {% else %}
-                <div class="card" style="text-align: center; color: #9ca3af; padding: 48px 24px; border: 1px solid rgba(34, 197, 94, 0.25); background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(15, 23, 42, 0.6) 100%); border-radius: 16px;">
+                <div class="card" style="text-align: center; color: var(--text-secondary); padding: 48px 24px; border: 1px solid var(--border-subtle); background: var(--bg-elevated); border-radius: 16px;">
                     <div style="width: 56px; height: 56px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(34, 197, 94, 0.15); display: flex; align-items: center; justify-content: center; color: #4ade80;">
                         <svg class="krono-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     </div>
@@ -831,10 +831,10 @@
                     <p style="color: #94a3b8; font-size: 0.92rem; max-width: 540px; margin: 0 auto 18px auto; line-height: 1.5;">
                         No pending fee demands, fine penalties, or outstanding dues are registered against student roll <b>{{ data.student_id }}</b>.
                     </p>
-                    <div style="display: inline-flex; gap: 12px; align-items: center; background: rgba(15, 23, 42, 0.8); border: 1px solid #1e293b; padding: 8px 18px; border-radius: 10px; font-size: 0.84rem;">
+                    <div style="display: inline-flex; gap: 12px; align-items: center; background: var(--bg-elevated); border: 1px solid var(--border-strong); padding: 8px 18px; border-radius: 10px; font-size: 0.84rem;">
                         <span style="color: #4ade80; font-weight: 700;">● ZERO OUTSTANDING BALANCE</span>
                         <span style="color: #64748b;">|</span>
-                        <span style="color: #cbd5e1;">Official AGC LMS Ledger</span>
+                        <span style="color: var(--text-secondary);">Official AGC LMS Ledger</span>
                     </div>
                 </div>
             {% endif %}
@@ -892,7 +892,7 @@
             <div class="card" style="max-width: 520px;">
                 <h3 style="font-size: 1.15rem; color: var(--accent-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> In-App Portal Password Changer
                 </h3>
-                <p style="color: #9ca3af; font-size: 0.88rem; margin-bottom: 16px;">Update your official
+                <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 16px;">Update your official
                     <code>agclms.in</code> password directly from Krono:</p>
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <input type="password" id="cp-old" class="form-input" placeholder="Current Portal Password">
