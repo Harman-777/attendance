@@ -248,7 +248,7 @@
 <div class="container">
     {% if error %}
     <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 0.9rem;">
-        ⚠️ {{ error }}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>{{ error }}
     </div>
     {% endif %}
     <div class="topbar">
@@ -272,7 +272,7 @@
             <div class="admin-view-wrap">
                 <div class="student-search-box">
                     <div style="position: relative; display: flex; align-items: center;">
-                        <span style="position: absolute; left: 10px; color: #94a3b8; font-size: 0.85rem; pointer-events: none;">🔍</span>
+                        <span style="position: absolute; left: 10px; color: #94a3b8; pointer-events: none; display: flex; align-items: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
                         <input type="text" id="admin-student-search" 
                                placeholder="Search student or roll no..." 
                                autocomplete="off"
@@ -280,7 +280,7 @@
                                onkeydown="onStudentSearchKeydown(event)"
                                onfocus="if(this.value.trim()) onStudentSearchInput(this.value)"
                                style="width: 100%; padding: 7px 28px 7px 30px; font-size: 0.82rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #f8fafc; outline: none;">
-                        <button id="search-clear-btn" type="button" onclick="clearStudentSearch()" style="display: none; position: absolute; right: 8px; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.82rem; padding: 2px;">✖</button>
+                        <button id="search-clear-btn" type="button" onclick="clearStudentSearch()" style="display: none; position: absolute; right: 8px; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.82rem; padding: 2px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                     </div>
                     <!-- Google-Style Autocomplete Recommendations Dropdown -->
                     <div id="student-search-dropdown" class="search-suggestions-box" style="display: none;"></div>
@@ -291,7 +291,7 @@
                     {% for u in users %}
                         {% if u.encrypted_password or (u.cached_profile and u.cached_profile.subjects) %}
                             {% set synced_count.value = synced_count.value + 1 %}
-                            <option value="{{ u.student_id }}" {% if synced_count.value == 1 %}selected{% endif %}>👤 {{ u.student_name }} ({{ u.student_id }}) — {{ u.overall_pct or 0 }}%</option>
+                            <option value="{{ u.student_id }}" {% if synced_count.value == 1 %}selected{% endif %}>{{ u.student_name }} ({{ u.student_id }}) — {{ u.overall_pct or 0 }}%</option>
                         {% endif %}
                     {% endfor %}
                     {% if synced_count.value == 0 %}
@@ -299,12 +299,12 @@
                     {% endif %}
                 </select>
                 <button type="button" class="btn btn-purple" id="btn-admin-view" onclick="openAdminView()" title="Inspect live student attendance in Admin View" {% if synced_count.value == 0 %}disabled style="opacity:0.6; cursor:not-allowed;"{% endif %}>
-                    👁️ Admin View
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>Admin View
                 </button>
             </div>
             <div class="admin-tools-wrap">
-                <button type="button" class="btn btn-outline" onclick="refreshAdminDashboard(this)" title="Refresh live logins & audit data">🔄 Refresh</button>
-                <a href="/admin/logout" class="btn btn-danger">🔒 Lock Admin Console</a>
+                <button type="button" class="btn btn-outline" onclick="refreshAdminDashboard(this)" title="Refresh live logins & audit data"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>Refresh</button>
+                <a href="/admin/logout" class="btn btn-danger"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Lock Admin Console</a>
             </div>
         </div>
     </div>
@@ -321,7 +321,7 @@
         <!-- Feedback & Suggestions Inbox with Day/Time/Star Sorting -->
         <div class="panel" style="margin-bottom: 0; max-height: 620px; overflow-y: auto;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h2 style="margin:0;">💬 Student Feedback & Suggestions</h2>
+                <h2 style="margin:0; display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Student Feedback &amp; Suggestions</h2>
                 <span class="pill pill-blue" id="fb-count-pill">{{ feedback|length }} Total</span>
             </div>
 
@@ -329,20 +329,20 @@
                 <div>
                     <label style="font-size:0.74rem; color:#94a3b8; display:block; margin-bottom:4px;">Sort By (Day / Time / Stars)</label>
                     <select id="fb-sort-select" onchange="filterAndSortFeedback()">
-                        <option value="newest">🕒 Newest First (Day & Time ↓)</option>
-                        <option value="oldest">🕰️ Oldest First (Day & Time ↑)</option>
-                        <option value="stars_high">⭐ Highest Stars (5★ → 1★)</option>
-                        <option value="stars_low">⭐ Lowest Stars (1★ → 5★)</option>
+                        <option value="newest">Newest First (Day & Time ↓)</option>
+                        <option value="oldest">Oldest First (Day & Time ↑)</option>
+                        <option value="stars_high">Highest Stars (5 &rarr; 1)</option>
+                        <option value="stars_low">Lowest Stars (1 &rarr; 5)</option>
                     </select>
                 </div>
                 <div>
                     <label style="font-size:0.74rem; color:#94a3b8; display:block; margin-bottom:4px;">Filter by Status / Type</label>
                     <select id="fb-filter-select" onchange="filterAndSortFeedback()">
                         <option value="ALL">All Student Feedback</option>
-                        <option value="Pending">🟡 Pending Only</option>
-                        <option value="Reviewed">🔵 Reviewed Only</option>
-                        <option value="Implemented">🟢 Implemented Only</option>
-                        <option value="ADMIN_BROADCAST">📢 Sent Broadcasts</option>
+                        <option value="Pending">Pending Only</option>
+                        <option value="Reviewed">Reviewed Only</option>
+                        <option value="Implemented">Implemented Only</option>
+                        <option value="ADMIN_BROADCAST">Sent Broadcasts</option>
                     </select>
                 </div>
             </div>
@@ -358,7 +358,7 @@
                         <span>
                             <b>{{ fb.student_name }}</b> ({{ fb.student_id }}) •
                             <span style="color:#38bdf8; font-weight:600;">{{ fb.category }}</span> •
-                            <span style="color:#fbbf24;">{{ '★' * (fb.rating or 5) }} ({{ fb.rating or 5 }}/5)</span>
+                            <span style="color:#fbbf24;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="none" style="vertical-align:-1px;margin-right:3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>{{ fb.rating or 5 }}/5</span>
                         </span>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span class="fb-formatted-time" style="color:#94a3b8; font-size:0.75rem;">{{ fb.created_at }}</span>
@@ -374,7 +374,7 @@
                         </select>
                         <input type="text" id="reply-{{ fb.id }}" value="{{ fb.admin_reply or '' }}" placeholder="Write developer reply (shows in-app + Web Push)..." style="flex:1;">
                         <button class="btn btn-primary" onclick="sendReply({{ fb.id }})">Save & Reply</button>
-                        <button class="btn btn-danger" onclick="deleteFeedback({{ fb.id }})" title="Delete">🗑️</button>
+                        <button class="btn btn-danger" onclick="deleteFeedback({{ fb.id }})" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
                     </div>
                 </div>
                 {% endfor %}
@@ -383,29 +383,29 @@
 
         <!-- Global Web Push & In-App Broadcaster -->
         <div class="panel" style="margin-bottom: 0;">
-            <h2>📢 Student Announcement & Push Broadcaster</h2>
+            <h2 style="display:flex; align-items:center; gap:8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Student Announcement &amp; Push Broadcaster</h2>
             <p style="color:#94a3b8; font-size:0.83rem; margin-bottom:14px;">
                 Displays an Announcement Banner inside the Student Dashboard <b>AND</b> sends a lock-screen Web Push notification.
             </p>
             <label style="font-size:0.8rem; color:#cbd5e1;">Target Audience</label>
             <select id="push-target" style="margin:6px 0 12px;">
-                <option value="all">🌍 All Registered Students ({{ stats.total_users }} users)</option>
+                <option value="all">All Registered Students ({{ stats.total_users }} users)</option>
                 {% for u in users %}
-                <option value="{{ u.student_id }}">👤 {{ u.student_name }} ({{ u.student_id }})</option>
+                <option value="{{ u.student_id }}">{{ u.student_name }} ({{ u.student_id }})</option>
                 {% endfor %}
             </select>
             <label style="font-size:0.8rem; color:#cbd5e1;">Announcement Title</label>
-            <input type="text" id="push-title" value="⚡ Krono Update" style="margin:6px 0 12px;">
+            <input type="text" id="push-title" value="Krono Update" style="margin:6px 0 12px;">
             <label style="font-size:0.8rem; color:#cbd5e1;">Message Body</label>
             <textarea id="push-body" rows="3" placeholder="Enter announcement message for students..." style="margin:6px 0 12px;"></textarea>
-            <button class="btn btn-purple" style="width:100%; padding:11px;" onclick="broadcastPush()">🚀 Send In-App Banner & Push Alert</button>
+            <button class="btn btn-purple" style="width:100%; padding:11px; display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="broadcastPush()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 9V4s3.03.55 4 2c1.08 1.62 0 5 0 5"/></svg>Send In-App Banner &amp; Push Alert</button>
             <p id="broadcast-status" style="margin-top:10px; font-size:0.84rem; font-weight:600; color:#4ade80;"></p>
         </div>
     </div>
 
     <!-- Registered Users Directory -->
     <div class="panel">
-        <h2>👥 Registered Users Directory ({{ users|length }})</h2>
+        <h2 style="display:flex; align-items:center; gap:8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Registered Users Directory ({{ users|length }})</h2>
         <table>
             <thead>
                 <tr>
@@ -426,18 +426,18 @@
                     <td>{{ u.student_name }}</td>
                     <td><span class="pill {% if (u.overall_pct or 0) >= 75 %}pill-green{% else %}pill-yellow{% endif %}">{{ u.overall_pct }}%</span></td>
                     <td>{% if u.encrypted_password %}<span class="pill pill-green">Encrypted</span>{% else %}<span class="pill pill-yellow">Empty</span>{% endif %}</td>
-                    <td>{% if u.push_subscription %}✅ Active{% else %}—{% endif %}</td>
+                    <td>{% if u.push_subscription %}<span class="pill pill-green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px;"><polyline points="20 6 9 17 4 12"/></svg>Active</span>{% else %}—{% endif %}</td>
                     <td>{{ u.login_count or 1 }}</td>
                     <td style="color:#94a3b8; font-size:0.78rem;">{{ (u.last_synced_at or '')[:19].replace('T', ' ') }}</td>
                     <td style="display:flex; gap:6px; flex-wrap:wrap;">
                         {% if u.encrypted_password or (u.cached_profile and u.cached_profile.subjects) %}
-                        <a href="/admin/view/{{ u.student_id|urlencode }}" target="_blank" class="btn btn-purple" style="font-size:0.78rem; padding:6px 10px;" title="Inspect live student attendance in Admin View">👁️ View Attendance</a>
+                        <a href="/admin/view/{{ u.student_id|urlencode }}" target="_blank" class="btn btn-purple" style="font-size:0.78rem; padding:6px 10px;" title="Inspect live student attendance in Admin View"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>View Attendance</a>
                         {% endif %}
                         {% if u.encrypted_password %}
-                        <button class="btn btn-primary" title="Scrape live attendance from college portal using Vault password" onclick="userAction('{{ u.student_id|e }}', 'force_sync')">🔄 Sync Now</button>
-                        <button class="btn btn-outline" title="Clear saved encrypted password from Supabase" onclick="userAction('{{ u.student_id|e }}', 'wipe_vault')">🗑️ Wipe Vault</button>
+                        <button class="btn btn-primary" title="Scrape live attendance from college portal using Vault password" onclick="userAction('{{ u.student_id|e }}', 'force_sync')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>Sync Now</button>
+                        <button class="btn btn-outline" title="Clear saved encrypted password from Supabase" onclick="userAction('{{ u.student_id|e }}', 'wipe_vault')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>Wipe Vault</button>
                         {% endif %}
-                        <button class="btn btn-danger" onclick="userAction('{{ u.student_id|e }}', 'delete_user')">✖ Delete</button>
+                        <button class="btn btn-danger" onclick="userAction('{{ u.student_id|e }}', 'delete_user')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Delete</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -448,8 +448,8 @@
     <!-- Security Login Audit Logs -->
     <div class="panel">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-            <h2 style="margin: 0;">🕵️‍♂️ Live Login Audit Trail (Last 100 Events)</h2>
-            <span class="pill pill-green">🟢 Live Tracking Active</span>
+            <h2 style="margin: 0; display:flex; align-items:center; gap:8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/></svg>Live Login Audit Trail (Last 100 Events)</h2>
+            <span class="pill pill-green"><svg width="10" height="10" viewBox="0 0 24 24" fill="#4ade80" stroke="none" style="vertical-align:0;margin-right:4px;"><circle cx="12" cy="12" r="10"/></svg>Live Tracking Active</span>
         </div>
         <div class="audit-scroll-box">
             <table>
@@ -482,7 +482,7 @@
 // Clean Admin Dashboard Refresh (avoids session cookie loss or reload quirks)
 function refreshAdminDashboard(btn) {
     if (btn) {
-        btn.innerHTML = "🔄 Refreshing...";
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spin" style="vertical-align:-2px;margin-right:4px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>Refreshing...';
         btn.style.opacity = "0.7";
         btn.disabled = true;
     }
@@ -593,7 +593,7 @@ function onStudentSearchInput(query) {
     if (topMatches.length === 0) {
         dropdown.innerHTML = `
             <div style="padding: 12px; text-align: center; color: #94a3b8; font-size: 0.82rem;">
-                🔍 No students matching "<b>${escapeHtml(query)}</b>"
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>No students matching "<b>${escapeHtml(query)}</b>"
             </div>
         `;
         dropdown.style.display = "block";
@@ -614,14 +614,14 @@ function onStudentSearchInput(query) {
         const highlightedId = highlightMatch(st.id, query);
         const pctColor = st.pct >= 75 ? '#4ade80' : (st.pct >= 65 ? '#fbbf24' : '#f87171');
         const syncBadge = st.isSynced 
-            ? '<span class="pill pill-green" style="font-size:0.68rem; padding: 2px 6px;">⚡ Synced</span>'
-            : '<span class="pill pill-yellow" style="font-size:0.68rem; padding: 2px 6px;">⏳ Unsynced</span>';
+            ? '<span class="pill pill-green" style="font-size:0.68rem; padding: 2px 6px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polyline points="20 6 9 17 4 12"/></svg>Synced</span>'
+            : '<span class="pill pill-yellow" style="font-size:0.68rem; padding: 2px 6px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Unsynced</span>';
 
         html += `
             <div class="search-item" data-index="${idx}" data-id="${escapeHtml(st.id)}">
                 <div style="display: flex; flex-direction: column; gap: 2px; text-align: left; overflow: hidden;">
                     <div style="color: #f8fafc; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        👤 ${highlightedName}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${highlightedName}
                     </div>
                     <div style="color: #94a3b8; font-size: 0.75rem;">
                         ID: <b>${highlightedId}</b> • Attendance: <span style="color: ${pctColor}; font-weight: 700;">${st.pct}%</span>
@@ -629,7 +629,7 @@ function onStudentSearchInput(query) {
                 </div>
                 <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
                     ${syncBadge}
-                    <span style="font-size: 0.75rem; background: #7c3aed; color: #fff; padding: 4px 8px; border-radius: 6px; font-weight: 600;">👁️ View</span>
+                    <span style="font-size: 0.75rem; background: #7c3aed; color: #fff; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>View</span>
                 </div>
             </div>
         `;
@@ -668,7 +668,7 @@ function selectStudentMatch(studentId) {
         if (!optExists) {
             const newOpt = document.createElement("option");
             newOpt.value = studentId;
-            newOpt.textContent = `👤 ${st.name} (${st.id}) — ${st.pct}%`;
+            newOpt.textContent = `${st.name} (${st.id}) — ${st.pct}%`;
             sel.appendChild(newOpt);
             sel.value = studentId;
         }

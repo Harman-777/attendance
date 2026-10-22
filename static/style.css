@@ -3,17 +3,18 @@
    ========================================================================== */
 
 /* ==========================================================================
-   Krono Dual Theme Architecture (Pitch-Black OLED + Paper-White)
+   Krono Dual Theme Architecture (High-Contrast Obsidian & Paper-White)
    ========================================================================== */
 
 :root,
 [data-theme="dark"] {
-    --bg-canvas: #000000;
-    --bg-sidebar: #09090B;
-    --bg-card: #0E0E11;
-    --bg-card-hover: #141418;
-    --bg-elevated: #18181C;
-    --border-subtle: #222228;
+    --bg-canvas: #09090B;
+    --bg-sidebar: #0E0E12;
+    --bg-card: #16161D;
+    --bg-card-hover: #1C1C26;
+    --bg-elevated: #20202B;
+    --border-subtle: #2E2E3A;
+    --border-strong: #3E3E4E;
     --border-focus: #3B82F6;
     --text-primary: #FAFAFA;
     --text-secondary: #A1A1AA;
@@ -31,7 +32,7 @@
     --bg-main: var(--bg-canvas);
     --bg-surface: var(--bg-elevated);
     --border-color: var(--border-subtle);
-    --border-light: #27272E;
+    --border-light: var(--border-strong);
     --cyan: var(--accent-primary);
     --cyan-hover: var(--accent-hover);
     --green: var(--status-present-text);
@@ -42,18 +43,20 @@
     --amber-bg: rgba(245, 158, 11, 0.15);
     --safe-bottom: env(safe-area-inset-bottom, 12px);
     --sidebar-width: 270px;
-    --radius-lg: 18px;
-    --radius-md: 12px;
+    --radius-lg: 14px;
+    --radius-md: 10px;
     --radius-sm: 8px;
+    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
 }
 
 [data-theme="light"] {
-    --bg-canvas: #FAFAFA;
-    --bg-sidebar: #F4F4F5;
+    --bg-canvas: #F1F5F9;
+    --bg-sidebar: #FFFFFF;
     --bg-card: #FFFFFF;
     --bg-card-hover: #F8FAFC;
-    --bg-elevated: #F1F5F9;
-    --border-subtle: #E4E4E7;
+    --bg-elevated: #F8FAFC;
+    --border-subtle: #CBD5E1;
+    --border-strong: #94A3B8;
     --border-focus: #2563EB;
     --text-primary: #09090B;
     --text-secondary: #52525B;
@@ -71,7 +74,7 @@
     --bg-main: var(--bg-canvas);
     --bg-surface: var(--bg-elevated);
     --border-color: var(--border-subtle);
-    --border-light: #E4E4E7;
+    --border-light: var(--border-subtle);
     --cyan: var(--accent-primary);
     --cyan-hover: var(--accent-hover);
     --green: var(--status-present-text);
@@ -82,11 +85,11 @@
     --amber-bg: #FEF3C7;
     --safe-bottom: env(safe-area-inset-bottom, 12px);
     --sidebar-width: 270px;
-    --radius-lg: 18px;
-    --radius-md: 12px;
+    --radius-lg: 14px;
+    --radius-md: 10px;
     --radius-sm: 8px;
+    --card-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
-
 
 * {
     box-sizing: border-box;
@@ -94,6 +97,27 @@
     padding: 0;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+}
+
+/* Custom Global Thin Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
 }
 
 html {
@@ -120,16 +144,28 @@ body {
    ========================================================================== */
 aside {
     width: var(--sidebar-width);
-    background: var(--bg-card);
-    border-right: 1px solid var(--border-color);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: column;
-    padding: 24px 18px;
+    padding: 16px 14px;
     flex-shrink: 0;
     position: sticky;
     top: 0;
     height: 100vh;
     z-index: 40;
+    overflow: hidden;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+aside::-webkit-scrollbar,
+.nav-container::-webkit-scrollbar,
+#sidebar-nav::-webkit-scrollbar {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+    background: transparent !important;
 }
 
 .brand-box {
@@ -138,8 +174,8 @@ aside {
     justify-content: space-between;
     gap: 8px;
     flex-wrap: nowrap;
-    margin-bottom: 24px;
-    padding: 0 8px;
+    margin-bottom: 14px;
+    padding: 0 4px;
 }
 
 .brand-box h2 {
@@ -177,16 +213,16 @@ aside {
     background: transparent;
     border: none;
     border-left: 3px solid transparent;
-    padding: 12px 14px;
+    padding: 9px 12px;
     color: var(--text-secondary);
-    border-radius: 10px;
-    font-size: 0.94rem;
+    border-radius: 9px;
+    font-size: 0.88rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
 }
 
 .nav-icon {
@@ -216,9 +252,9 @@ aside {
     margin-top: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border-color);
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-subtle);
 }
 
 .btn-app-hub-sidebar {
@@ -1746,4 +1782,58 @@ input:focus, select:focus, textarea:focus {
 [data-theme="light"] .logout-btn:hover {
     background: #DC2626;
     color: #FFFFFF;
+}
+
+
+/* Explicit Block Separation & Elevation Architecture */
+.card,
+.stat-card,
+.subject-card,
+.today-banner,
+.intel-bar,
+.header-stats-card,
+.calc-card,
+.feedback-card,
+.profile-hero,
+.admin-live-banner,
+.cal-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 14px !important;
+    box-shadow: var(--card-shadow) !important;
+    color: var(--text-primary);
+}
+
+/* Inner Nested Blocks (Never blend into parent card) */
+.today-pill,
+.sim-box,
+.push-notice-box,
+.profile-item,
+.impact-strip,
+.target-badge,
+.vacation-input-row,
+.ultra-fb-field,
+.form-input,
+.sem-dropdown,
+.modal-textarea,
+input[type="text"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-strong) !important;
+    border-radius: 10px;
+    color: var(--text-primary) !important;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus,
+.ultra-fb-field:focus {
+    border-color: var(--border-focus) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
 }

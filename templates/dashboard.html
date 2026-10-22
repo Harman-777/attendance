@@ -23,7 +23,7 @@
 
     <!-- Background Sync Toast Notification -->
     <div id="bg-sync-toast" style="position: fixed; top: 14px; right: 14px; z-index: 99999; background: rgba(15, 23, 42, 0.92); border: 1px solid #38bdf8; color: #38bdf8; padding: 10px 18px; border-radius: 30px; font-size: 0.82rem; font-weight: 700; box-shadow: 0 10px 25px rgba(0,0,0,0.5); backdrop-filter: blur(10px); display: none; opacity: 0; transform: translateY(-10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;">
-        ✨ Sync Complete: Records & Profile Updated
+        <svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Sync Complete: Records &amp; Profile Updated
     </div>
 
     <!-- Mobile Top Navigation Header -->
@@ -158,7 +158,7 @@
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 {% if vault_enabled %}
                 <a href="/admin/view/{{ viewed_student_id or data.student_id }}?live=1" style="background: #2563eb; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                    🔄 Scrape Live Portal Data
+                    <svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg> Scrape Live Portal Data
                 </a>
                 {% endif %}
                 <a href="/admin" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 700;">
@@ -179,7 +179,7 @@
                     <div class="sync-status-row" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
                         <button type="button" id="sync-status-pill" class="sync-pill {% if data.is_offline %}sync-offline{% else %}sync-live{% endif %}" onclick="window.triggerRealtimeAttendanceSync(true)" title="Tap to sync live attendance from portal">
                             {% if data.is_offline %}
-                            <span class="sync-dot">⚠️</span> <span class="sync-pill-text">Offline Snapshot (<span id="sync-time-badge">{{ data.last_synced }}</span>)</span> <span class="sync-spin-icon"><svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></span>
+                            <span class="sync-dot"><svg class="krono-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> <span class="sync-pill-text">Offline Snapshot (<span id="sync-time-badge">{{ data.last_synced }}</span>)</span> <span class="sync-spin-icon"><svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></span>
                             {% else %}
                             <span class="sync-dot">●</span> <span class="sync-pill-text">Live Synced (<span id="sync-time-badge">{{ data.last_synced }}</span>)</span> <span class="sync-spin-icon"><svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></span>
                             {% endif %}
@@ -227,7 +227,7 @@
                     {% elif data.latest_attendance_records %}
                     <p id="today-empty-msg" style="color: #9ca3af; font-size: 0.90rem; margin-bottom: 8px;">No lectures marked for today ({{ data.today_date }}) yet. Any new marks will trigger an instant alert.</p>
                     <div style="font-size: 0.82rem; color: #38bdf8; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                        <span>📌 Last Uploaded on College Portal ({{ data.latest_attendance_date }}):</span>
+                        <span><svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Last Uploaded on College Portal ({{ data.latest_attendance_date }}):</span>
                     </div>
                     <div class="today-list" id="today-list">
                         {% for item in data.latest_attendance_records %}
@@ -261,7 +261,7 @@
                 </div>
                 <label class="toggle-label">
                     <input type="checkbox" id="medical-toggle">
-                    <span>🏥 Medical Leave Relaxation (65% Condonation Mode)</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px;"><svg class="krono-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 5v6"/><path d="M9 8h6"/></svg> Medical Leave Relaxation (65% Condonation Mode)</span>
                 </label>
             </div>
 
@@ -303,8 +303,7 @@
         <!-- 2. MULTI-DAY VACATION / MASS-BUNK PLANNER TAB -->
         <div id="tab-vacation" class="tab-panel">
             <div class="card" style="margin-bottom: 24px;">
-                <h2 style="font-size: 1.3rem; color: #38bdf8; margin-bottom: 8px;">🏖️ Multi-Day Vacation & Mass-Bunk
-                    Planner</h2>
+                <h2 style="font-size: 1.3rem; color: var(--accent-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.95 16A6 6 0 0 0 8.05 16"/><path d="M2 16h20"/><path d="M4 20h16"/></svg> Multi-Day Vacation &amp; Mass-Bunk Planner</h2>
                 <p style="color: #9ca3af; font-size: 0.92rem; margin-bottom: 20px;">
                     Planning a trip or taking days off? Choose how many lectures per subject you plan to miss to see
                     your post-vacation standing across all subjects at once.
@@ -373,9 +372,9 @@
                     <div class="cal-grid" id="cal-body"></div>
                     <div
                         style="display: flex; gap: 16px; margin-top: 18px; font-size: 0.8rem; color: #9ca3af; justify-content: center;">
-                        <span>🟢 All Present</span>
-                        <span>🔴 Absent</span>
-                        <span>🟡 Mixed</span>
+                        <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#22c55e; display:inline-block;"></span> All Present</span>
+                        <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span> Absent</span>
+                        <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span> Mixed</span>
                     </div>
                 </div>
 
@@ -395,8 +394,7 @@
                 style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; margin-bottom: 28px;">
                 <!-- SGPA Trend Graph Card -->
                 <div class="card" id="sgpa-trend-card">
-                    <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">📈 Semester SGPA Performance
-                        Trend</h3>
+                    <h3 style="font-size: 1.15rem; color: var(--accent-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Semester SGPA Performance Trend</h3>
                     <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 12px;">Automated grade-point
                         progression across published semesters</p>
                     {% if data.results %}
@@ -405,7 +403,7 @@
                         <div class="chart-bar-wrap">
                             {% if sem.has_reappear %}
                             <span style="font-size: 0.74rem; font-weight: 800; color: #fb7185; margin-bottom: 6px; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); padding: 2px 6px; border-radius: 6px;">
-                                ⚠️ RA ({{ sem.sgpa if sem.sgpa > 0 else 'Backlog' }})
+                                <svg class="krono-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> RA ({{ sem.sgpa if sem.sgpa > 0 else 'Backlog' }})
                             </span>
                             <div class="chart-bar" data-sgpa="{{ sem.sgpa }}" style="background: linear-gradient(180deg, #f43f5e 0%, #e11d48 100%) !important; border: 1px solid #fda4af;"></div>
                             {% else %}
@@ -429,7 +427,7 @@
                     {% if ns.reappear_count > 0 %}
                     <div style="margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.85rem;">
                         <div style="font-weight: 700; color: #f87171; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                            <span>⚠️</span> Active Re-appear / Backlog Notice
+                            <svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Active Re-appear / Backlog Notice
                         </div>
                         {% for sem in data.results %}
                             {% if sem.has_reappear %}
@@ -446,7 +444,7 @@
                     </div>
                     {% else %}
                     <div style="margin-top: 18px; padding: 10px 14px; border-radius: 10px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); font-size: 0.82rem; color: #86efac; display: flex; align-items: center; gap: 8px;">
-                        <span>✔</span> <b>Academic Record Cleared:</b> All published semesters cleared with zero backlogs!
+                        <svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> <b>Academic Record Cleared:</b> All published semesters cleared with zero backlogs!
                     </div>
                     {% endif %}
                     {% else %}
@@ -456,8 +454,7 @@
 
                 <!-- Target Grade Predictor Card -->
                 <div class="card">
-                    <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">🎯 Final Exam Target Grade
-                        Predictor</h3>
+                    <h3 style="font-size: 1.15rem; color: var(--accent-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Final Exam Target Grade Predictor</h3>
                     <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 16px;">Enter your internal sessional
                         marks to see the exact external score needed:</p>
                     <div style="display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
@@ -539,8 +536,7 @@
 
                 <!-- Browser & Email Absent Alert Card -->
                 <div class="card">
-                    <h3 style="font-size: 1.2rem; color: #38bdf8; margin-bottom: 8px;">🔔 Instant Absent Notification
-                        Center</h3>
+                    <h3 style="font-size: 1.2rem; color: var(--accent-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> Instant Absent Notification Center</h3>
                     <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 18px;">
                         Get notified via Browser Push and Email whenever an <b>ABSENT</b> is marked on your portal.
                     </p>
@@ -555,30 +551,28 @@
                             style="width: auto; padding: 8px 14px;">Enable & Test Push</button>
                     </div>
 
-                    <h4 style="font-size: 1rem; margin-bottom: 10px; color: #e2e8f0;">📧 Email Absent Alert Setup</h4>
+                    <h4 style="font-size: 1rem; margin-bottom: 10px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> Email Absent Alert Setup</h4>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <hr style="border: none; border-top: 1px solid #1f2937; margin: 20px 0;">
-                        <h4 style="font-size: 1rem; margin-bottom: 6px; color: #38bdf8;">🔐 Cloud Password Vault (24/7
-                            Auto-Sync & 0.4s Instant Login)</h4>
+                        <h4 style="font-size: 1rem; margin-bottom: 6px; color: var(--accent-primary); display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Cloud Password Vault (24/7 Auto-Sync &amp; 0.4s Instant Login)</h4>
                         <p style="color: #9ca3af; font-size: 0.84rem; margin-bottom: 12px;">
                             Opt-in to store your password encrypted with AES-256 in Supabase so GitHub Actions can check
                             your attendance while you sleep.
                         </p>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <button type="button" class="btn-pdf" id="btn-encrypt-vault" style="flex: 1;">
-                                {% if vault_enabled %}🔒 Re-Encrypt & Update Vault{% else %}🔐 Encrypt & Save Password
-                                to Cloud{% endif %}
+                                {% if vault_enabled %}<svg class="krono-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Re-Encrypt &amp; Update Vault{% else %}<svg class="krono-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Encrypt &amp; Save Password to Cloud{% endif %}
                             </button>
                             <button type="button" class="btn-dispute" id="btn-wipe-vault" style="padding: 10px 14px;">
-                                🗑️ Wipe Vault
+                                <svg class="krono-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg> Wipe Vault
                             </button>
                         </div>
                         <p id="vault-status-msg"
                             style="font-size: 0.85rem; margin-top: 8px; font-weight: 600; color: {% if vault_enabled %}#4ade80{% else %}#fbbf24{% endif %};">
                             {% if vault_enabled %}
-                            ✔ Password is encrypted in Supabase Vault (0.4s Instant Login & Background Sync Active)
+                            <svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Password is encrypted in Supabase Vault (0.4s Instant Login & Background Sync Active)
                             {% else %}
-                            🛡️ Vault is currently EMPTY (Session-Only Privacy Mode)
+                            <svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Vault is currently EMPTY (Session-Only Privacy Mode)
                             {% endif %}
                         </p>
 
@@ -646,7 +640,7 @@
                         {% if admin_announcements %}
                         <div class="admin-broadcast-banner">
                             <div style="font-size: 0.76rem; font-weight: 800; color: #c084fc; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
-                                📢 Official Developer Announcement
+                                <svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> Official Developer Announcement
                             </div>
                             {% for ann in admin_announcements %}
                             <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08);">
@@ -659,7 +653,7 @@
                         {% endif %}
 
                         <h4 style="font-size: 1.05rem; margin-bottom: 6px; color: #c084fc; display: flex; align-items: center; gap: 8px;">
-                            💬 Feedback & Feature Suggestions
+                            <svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg> Feedback &amp; Feature Suggestions
                         </h4>
                         <p style="color: #94a3b8; font-size: 0.84rem; margin-bottom: 14px;">
                             Have an idea, found a bug, or want a new feature? Send it directly to the developer.
@@ -667,24 +661,24 @@
 
                         <div class="ultra-fb-row">
                             <select id="fb-category" class="ultra-fb-field">
-                                <option value="Feature Suggestion">💡 Feature Suggestion</option>
-                                <option value="UI / Speed Feedback">⚡ UI / Speed Feedback</option>
-                                <option value="Bug Report">🐛 Bug Report</option>
-                                <option value="General Appreciation">❤️ General Feedback</option>
+                                <option value="Feature Suggestion">Feature Suggestion</option>
+                                <option value="UI / Speed Feedback">UI / Speed Feedback</option>
+                                <option value="Bug Report">Bug Report</option>
+                                <option value="General Appreciation">General Feedback</option>
                             </select>
                             <select id="fb-rating" class="ultra-fb-field">
-                                <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
-                                <option value="4">⭐⭐⭐⭐ (4/5)</option>
-                                <option value="3">⭐⭐⭐ (3/5)</option>
-                                <option value="2">⭐⭐ (2/5)</option>
-                                <option value="1">⭐ (1/5)</option>
+                                <option value="5">5 Stars (Excellent)</option>
+                                <option value="4">4 Stars (Good)</option>
+                                <option value="3">3 Stars (Average)</option>
+                                <option value="2">2 Stars (Needs Improvement)</option>
+                                <option value="1">1 Star (Poor)</option>
                             </select>
                         </div>
 
                         <textarea id="fb-message" class="ultra-fb-field" rows="3" placeholder="Describe your suggestion or feedback here..." style="margin-bottom: 12px; resize: vertical;"></textarea>
 
                         <button type="button" class="ultra-fb-btn" id="btn-submit-feedback" onclick="window.submitUltraFeedback()">
-                            🚀 Send Feedback to Developer
+                            <svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Feedback to Developer
                         </button>
                         <p id="fb-status-msg" style="font-size: 0.85rem; margin-top: 8px; font-weight: 600;"></p>
 
@@ -694,7 +688,7 @@
                             {% for item in user_feedback %}
                             <div style="background: #0b1120; border: 1px solid #1e293b; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #38bdf8; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
-                                    <span><b>{{ item.category }}</b> • {{ item.rating }}★ <span style="color:#64748b; margin-left:6px;">{{ (item.created_at or '')[:16].replace('T', ' ') }}</span></span>
+                                    <span><b>{{ item.category }}</b> • {{ item.rating }}/5 <span style="color:#64748b; margin-left:6px;">{{ (item.created_at or '')[:16].replace('T', ' ') }}</span></span>
                                     <span style="font-weight: 700; color: {% if item.status == 'Implemented' %}#4ade80{% elif item.status == 'Reviewed' %}#38bdf8{% else %}#fbbf24{% endif %};">
                                         ● {{ item.status }}
                                     </span>
@@ -702,7 +696,7 @@
                                 <p style="font-size: 0.88rem; color: #e2e8f0; margin: 0; line-height: 1.45;">{{ item.message }}</p>
                                 {% if item.admin_reply %}
                                 <div style="margin-top: 10px; padding: 10px 12px; background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38bdf8; border-radius: 8px; font-size: 0.84rem; color: #bae6fd;">
-                                    <b>👨‍💻 Developer Reply:</b> {{ item.admin_reply }}
+                                    <svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> <b>Developer Reply:</b> {{ item.admin_reply }}
                                 </div>
                                 {% endif %}
                             </div>
@@ -765,7 +759,7 @@
 
                 <!-- Wrong-Absent Dispute Generator Card -->
                 <div class="card">
-                    <h3 style="font-size: 1.2rem; color: #38bdf8; margin-bottom: 8px;">⚖️ Wrong-Absent Dispute Generator
+                    <h3 style="font-size: 1.2rem; color: var(--accent-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg> Wrong-Absent Dispute Generator
                     </h3>
                     <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 16px;">
                         Marked absent by mistake? Generate an official correction request addressed to <b>{{
@@ -788,7 +782,7 @@
                     <textarea id="dispute-output" class="modal-textarea" readonly
                         placeholder="Your formatted application will appear here..."></textarea>
                     <button type="button" class="btn-dispute" id="btn-copy-dispute"
-                        style="width: 100%; padding: 10px;">📋 Copy Application Text</button>
+                        style="width: 100%; padding: 10px;"><svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Copy Application Text</button>
                 </div>
 
             </div>
@@ -830,8 +824,8 @@
                 {% endfor %}
             {% else %}
                 <div class="card" style="text-align: center; color: #9ca3af; padding: 48px 24px; border: 1px solid rgba(34, 197, 94, 0.25); background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(15, 23, 42, 0.6) 100%); border-radius: 16px;">
-                    <div style="width: 56px; height: 56px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(34, 197, 94, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #4ade80;">
-                        ✔
+                    <div style="width: 56px; height: 56px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(34, 197, 94, 0.15); display: flex; align-items: center; justify-content: center; color: #4ade80;">
+                        <svg class="krono-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     </div>
                     <h3 style="font-size: 1.25rem; color: #f8fafc; margin-bottom: 8px;">100% Fees Paid & Cleared</h3>
                     <p style="color: #94a3b8; font-size: 0.92rem; max-width: 540px; margin: 0 auto 18px auto; line-height: 1.5;">
@@ -858,7 +852,7 @@
                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                         {% else %}
                         <span id="profile-avatar-initials" style="font-size: 2.2rem; font-weight: 800; color: #ffffff; letter-spacing: 0.05em; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">
-                            {{ (data.student_name.split()[0][0] + data.student_name.split()[-1][0]).upper() if data.student_name and data.student_name != 'Student' and data.student_name.split()|length > 1 else (data.student_name[:2].upper() if data.student_name and data.student_name != 'Student' else '🎓') }}
+                            {{ (data.student_name.split()[0][0] + data.student_name.split()[-1][0]).upper() if data.student_name and data.student_name != 'Student' and data.student_name.split()|length > 1 else (data.student_name[:2].upper() if data.student_name and data.student_name != 'Student' else 'ST') }}
                         </span>
                         {% endif %}
                     </div>
@@ -896,7 +890,7 @@
 
             <!-- In-App Portal Password Changer -->
             <div class="card" style="max-width: 520px;">
-                <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">🔐 In-App Portal Password Changer
+                <h3 style="font-size: 1.15rem; color: var(--accent-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> In-App Portal Password Changer
                 </h3>
                 <p style="color: #9ca3af; font-size: 0.88rem; margin-bottom: 16px;">Update your official
                     <code>agclms.in</code> password directly from Krono:</p>
@@ -934,7 +928,7 @@
     <!-- Krono Mobile App Hub & Share Modal -->
     <div id="ultra-app-modal" class="app-modal-overlay">
         <div class="app-modal-card">
-            <button type="button" class="app-modal-close" onclick="closeUltraAppModal()" aria-label="Close modal">✖</button>
+            <button type="button" class="app-modal-close" onclick="closeUltraAppModal()" aria-label="Close modal"><svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             <div class="app-modal-header">
                 <span class="app-modal-badge">OFFICIAL APP HUB</span>
                 <h2 class="app-modal-title">Krono Mobile Workspace</h2>
@@ -952,10 +946,10 @@
                 </div>
                 <p class="section-desc">Zero security warnings • Direct Chrome/Android WebAPK • Instant home screen launcher &amp; auto-updates.</p>
                 <button type="button" id="btn-pwa-install" class="btn-hub-action btn-hub-primary" onclick="triggerPwaInstall()">
-                    ⚡ 1-Click Install WebAPK
+                    <svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> 1-Click Install WebAPK
                 </button>
                 <div id="ios-install-guide" class="ios-instruction-box">
-                    <b>🍏 iOS / Safari Installation:</b><br>
+                    <span style="display:inline-flex; align-items:center; gap:6px;"><svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/><path d="M10 2c1 .5 2 2 2 5"/></svg> <b>iOS / Safari Installation:</b></span><br>
                     1. Tap the <b>Share</b> button (square with arrow) at the bottom.<br>
                     2. Scroll down and tap <b>"Add to Home Screen"</b> (+).
                 </div>
@@ -972,10 +966,10 @@
                 </div>
                 <p class="section-desc">Direct signed Android APK (~2.5 MB). Full offline shell &amp; hardware back navigation.</p>
                 <a href="/download/Krono.apk" class="btn-hub-action btn-hub-purple" download onclick="triggerApkUpdate();">
-                    ⬇️ Download Krono.apk
+                    <svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Krono.apk
                 </a>
                 <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; line-height: 1.4;">
-                    💡 <i>If prompted by Android/Chrome ("File might be harmful"), tap <b>"Download anyway"</b> and <b>"Install"</b>. Or use Option 1 above for instant zero-warning install.</i>
+                    <svg class="krono-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> <i>If prompted by Android/Chrome ("File might be harmful"), tap <b>"Download anyway"</b> and <b>"Install"</b>. Or use Option 1 above for instant zero-warning install.</i>
                 </p>
             </div>
 
@@ -990,15 +984,15 @@
                 <p class="section-desc">Help friends track live attendance, calculate safe bunks, and beat 75% short-attendance.</p>
                 <div class="share-grid">
                     <button type="button" class="btn-share-item whatsapp" onclick="shareOnWhatsApp()">
-                        <span style="font-size: 1.2rem;">💬</span>
+                        <svg class="krono-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
                         <span>WhatsApp</span>
                     </button>
                     <button type="button" class="btn-share-item" onclick="shareNativeSheet()">
-                        <span style="font-size: 1.2rem;">📤</span>
+                        <svg class="krono-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                         <span>Share Sheet</span>
                     </button>
                     <button type="button" id="btn-copy-share-link" class="btn-share-item" onclick="copyPortalShareLink()">
-                        <span style="font-size: 1.2rem;">🔗</span>
+                        <svg class="krono-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                         <span>Copy Link</span>
                     </button>
                 </div>
@@ -1007,7 +1001,7 @@
             <!-- Option 4: Classroom QR Code Pass -->
             <div class="app-hub-section" style="margin-bottom: 0;">
                 <div class="section-head">
-                    <div class="section-title">📷 Classroom QR Code Pass</div>
+                    <div class="section-title"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/></svg> Classroom QR Code Pass</div>
                 </div>
                 <p class="section-desc">Let friends scan this QR code directly from your phone or laptop screen.</p>
                 <div class="qr-container-box">

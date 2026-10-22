@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let medicalMode = false;
 
     function getInitials(name) {
-        if (!name || name.trim().toLowerCase() === "student") return "🎓";
+        if (!name || name.trim().toLowerCase() === "student") return "ST";
         const parts = name.trim().split(/\s+/);
         if (parts.length >= 2) {
             return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -135,15 +135,15 @@ document.addEventListener("DOMContentLoaded", function () {
         barEl.style.background = color;
         countEl.innerHTML = "Attended: <b>" + p + "</b> / <b>" + t + "</b> classes";
 
-        nextAttEl.textContent = "↗ Next Attend: " + nextAtt.toFixed(1) + "%";
-        nextSkipEl.textContent = "↘ Next Skip: " + nextSkip.toFixed(1) + "%";
+        nextAttEl.textContent = "Next Attend: " + nextAtt.toFixed(1) + "%";
+        nextSkipEl.textContent = "Next Skip: " + nextSkip.toFixed(1) + "%";
 
         if (t === 0) {
             boxEl.textContent = "No classes recorded yet.";
         } else if (isSafe) {
             const bunks = Math.floor((p - targetDec * t) / targetDec);
             if (bunks <= 2) {
-                boxEl.textContent = "⚠️ Danger Zone: Only " + bunks + " safe skip(s) for " + target + "%!";
+                boxEl.textContent = "Danger Zone: Only " + bunks + " safe skip(s) for " + target + "%!";
             } else {
                 boxEl.textContent = "Safe! You can skip " + bunks + " classes for " + target + "%.";
             }
@@ -348,9 +348,9 @@ document.addEventListener("DOMContentLoaded", function () {
         copyDispBtn.addEventListener("click", function () {
             dispOut.select();
             navigator.clipboard.writeText(dispOut.value);
-            copyDispBtn.textContent = "✔ Copied to Clipboard!";
+            copyDispBtn.innerHTML = '<svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied to Clipboard!';
             setTimeout(function () {
-                copyDispBtn.textContent = "📋 Copy Application Text";
+                copyDispBtn.innerHTML = '<svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Copy Application Text';
             }, 2000);
         });
     }
@@ -428,7 +428,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const result = await res.json();
 
             pushStatus.textContent = result.ok
-                ? "✔ Linked to Supabase! Lock-Screen Push Active."
+                ? "Linked to Supabase! Lock-Screen Push Active."
                 : result.message;
             pushStatus.style.color = result.ok ? "#4ade80" : "#fbbf24";
         } catch (err) {
@@ -642,9 +642,9 @@ document.addEventListener("DOMContentLoaded", function () {
             vaultStatusMsg.textContent = res.message;
             vaultStatusMsg.style.color = res.vault_enabled ? "#4ade80" : "#fbbf24";
             if (encryptVaultBtn) {
-                encryptVaultBtn.textContent = res.vault_enabled
-                    ? "🔒 Re-Encrypt & Update Vault"
-                    : "🔐 Encrypt & Save Password to Cloud";
+                encryptVaultBtn.innerHTML = res.vault_enabled
+                    ? '<svg class="krono-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Re-Encrypt & Update Vault'
+                    : '<svg class="krono-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Encrypt & Save Password to Cloud';
             }
         });
     }
@@ -669,7 +669,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const sgpaCard = document.getElementById("sgpa-trend-card");
         if (sgpaCard) {
             let chartHtml = `
-                <h3 style="font-size: 1.15rem; color: #38bdf8; margin-bottom: 6px;">📈 Semester SGPA Performance Trend</h3>
+                <h3 style="font-size: 1.15rem; color: var(--accent-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Semester SGPA Performance Trend</h3>
                 <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 12px;">Automated grade-point progression across published semesters</p>
                 <div class="chart-row">
             `;
@@ -684,7 +684,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     chartHtml += `
                         <div class="chart-bar-wrap">
                             <span style="font-size: 0.74rem; font-weight: 800; color: #fb7185; margin-bottom: 6px; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); padding: 2px 6px; border-radius: 6px;">
-                                ⚠️ RA (${sem.sgpa > 0 ? sem.sgpa : 'Backlog'})
+                                <svg class="krono-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> RA (${sem.sgpa > 0 ? sem.sgpa : 'Backlog'})
                             </span>
                             <div class="chart-bar" data-sgpa="${sem.sgpa}" style="background: linear-gradient(180deg, #f43f5e 0%, #e11d48 100%) !important; border: 1px solid #fda4af;"></div>
                             <span style="font-size: 0.78rem; color: #9ca3af; margin-top: 8px;">${sem.semester}</span>
@@ -707,7 +707,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 chartHtml += `
                     <div style="margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.85rem;">
                         <div style="font-weight: 700; color: #f87171; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                            <span>⚠️</span> Active Re-appear / Backlog Notice
+                            <svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Active Re-appear / Backlog Notice
                         </div>
                 `;
                 reappearDetails.forEach(function (rd) {
@@ -722,7 +722,7 @@ document.addEventListener("DOMContentLoaded", function () {
             } else {
                 chartHtml += `
                     <div style="margin-top: 18px; padding: 10px 14px; border-radius: 10px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); font-size: 0.82rem; color: #86efac; display: flex; align-items: center; gap: 8px;">
-                        <span>✔</span> <b>Academic Record Cleared:</b> All published semesters cleared with zero backlogs!
+                        <svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> <b>Academic Record Cleared:</b> All published semesters cleared with zero backlogs!
                     </div>
                 `;
             }
@@ -801,7 +801,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (syncPill) {
             syncPill.className = "sync-pill is-syncing";
             syncPill.disabled = true;
-            syncPill.innerHTML = '<span class="sync-spin-icon spinning">🔄</span> <span class="sync-pill-text">Syncing live attendance...</span>';
+            syncPill.innerHTML = '<span class="sync-spin-icon"><svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></span> <span class="sync-pill-text">Syncing live attendance...</span>';
         }
         if (syncIcon) {
             syncIcon.style.animation = "spin 1s linear infinite";
@@ -829,7 +829,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (syncPill) {
                     syncPill.className = "sync-pill sync-offline";
                     syncPill.disabled = false;
-                    syncPill.innerHTML = '<span class="sync-dot">⚠️</span> <span class="sync-pill-text">Offline Snapshot (Tap to retry)</span> <span class="sync-spin-icon">🔄</span>';
+                    syncPill.innerHTML = '<span class="sync-dot"><svg class="krono-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> <span class="sync-pill-text">Offline Snapshot (Tap to retry)</span> <span class="sync-spin-icon"><svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></span>';
                 }
                 return;
             }
@@ -856,7 +856,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (syncPill) {
                 syncPill.className = "sync-pill sync-live";
                 syncPill.disabled = false;
-                syncPill.innerHTML = '<span class="sync-dot">●</span> <span class="sync-pill-text">Live Synced (<span id="sync-time-badge">' + (res.last_synced || 'Just now') + '</span>)</span> <span class="sync-spin-icon">🔄</span>';
+                syncPill.innerHTML = '<span class="sync-dot">●</span> <span class="sync-pill-text">Live Synced (<span id="sync-time-badge">' + (res.last_synced || 'Just now') + '</span>)</span> <span class="sync-spin-icon"><svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></span>';
             }
 
             // Visual feedback pulse on overall stats and subject cards
@@ -978,7 +978,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         let fallbackHtml = `
                             <p id="today-empty-msg" style="color: #9ca3af; font-size: 0.90rem; margin-bottom: 8px;">No lectures marked for today (${dateText}) yet. Any new marks will trigger an instant alert.</p>
                             <div style="font-size: 0.82rem; color: #38bdf8; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                                <span>📌 Last Uploaded on College Portal (${res.latest_attendance_date || ''}):</span>
+                                <span><svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Last Uploaded on College Portal (${res.latest_attendance_date || ''}):</span>
                             </div>
                             <div class="today-list" id="today-list">
                         `;
@@ -1017,7 +1017,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (isManual) {
                 const syncToast = document.getElementById("bg-sync-toast");
                 if (syncToast) {
-                    syncToast.textContent = "⚡ Real-Time Attendance Synced (" + res.last_synced + ")";
+                    syncToast.innerHTML = '<svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Real-Time Attendance Synced (' + res.last_synced + ')';
                     syncToast.style.opacity = "1";
                     syncToast.style.transform = "translateY(0)";
                     setTimeout(function () {
@@ -1116,7 +1116,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (syncPill) {
                 syncPill.className = "sync-pill sync-offline";
                 syncPill.disabled = false;
-                syncPill.innerHTML = '<span class="sync-dot">⚠️</span> <span class="sync-pill-text">Offline Snapshot (Tap to retry)</span> <span class="sync-spin-icon">🔄</span>';
+                syncPill.innerHTML = '<span class="sync-dot"><svg class="krono-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> <span class="sync-pill-text">Offline Snapshot (Tap to retry)</span> <span class="sync-spin-icon"><svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></span>';
             }
         });
     };
