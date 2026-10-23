@@ -32,13 +32,28 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Button;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.os.Handler;
+import android.os.Looper;
 
 public class MainActivity extends Activity {
 
     private static final String PORTAL_URL = "https://attendance-liard-three.vercel.app";
-    private static final int DARK_BG_COLOR = 0xFF000000;
-    private static final int LIGHT_BG_COLOR = 0xFFF4F4F5;
+    private static final int DARK_BG_COLOR = 0xFF090B0E;
+    private static final int LIGHT_BG_COLOR = 0xFFE4E8EE;
     private WebView webView;
+    private View splashOverlay;
+    private ImageView splashLogo;
+    private ProgressBar splashProgress;
+    private TextView splashStatus;
+    private Button btnSplashRetry;
+    private boolean isSplashDismissed = false;
 
     public class WebAppInterface {
         private final Activity activity;
@@ -226,6 +241,45 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void dismissSplash() {
+        if (isSplashDismissed || splashOverlay == null) return;
+        isSplashDismissed = true;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (splashOverlay != null && splashOverlay.getVisibility() == View.VISIBLE) {
+                    splashOverlay.animate()
+                        .alpha(0f)
+                        .setDuration(350)
+                        .withEndAction(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (splashOverlay != null) {
+                                    splashOverlay.setVisibility(View.GONE);
+                                    if (splashLogo != null) {
+                                        splashLogo.clearAnimation();
+                                    }
+                                }
+                            }
+                        })
+                        .start();
+                }
+            }
+        });
+    }
+
+    private void showSplashRetry(final String message) {
+        if (isSplashDismissed) return;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (splashProgress != null) splashProgress.setVisibility(View.GONE);
+                if (splashStatus != null) splashStatus.setText(message);
+                if (btnSplashRetry != null) btnSplashRetry.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -265,6 +319,49 @@ public class MainActivity extends Activity {
         webView = findViewById(R.id.webView);
         webView.setBackgroundColor(DARK_BG_COLOR);
 
+        splashOverlay = findViewById(R.id.splashOverlay);
+        splashLogo = findViewById(R.id.splashLogo);
+        splashProgress = findViewById(R.id.splashProgress);
+        splashStatus = findViewById(R.id.splashStatus);
+        btnSplashRetry = findViewById(R.id.btnSplashRetry);
+
+        if (splashLogo != null) {
+            Animation pulse = AnimationUtils.loadAnimation(this, R.anim.krono_pulse);
+            splashLogo.startAnimation(pulse);
+        }
+
+        if (btnSplashRetry != null) {
+            btnSplashRetry.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    btnSplashRetry.setVisibility(View.GONE);
+                    if (splashProgress != null) splashProgress.setVisibility(View.VISIBLE);
+                    if (splashStatus != null) splashStatus.setText("Connecting to Krono…");
+                    if (webView != null) webView.reload();
+                }
+            });
+        }
+
+        // Subtitle dynamic pulse
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!isSplashDismissed && splashStatus != null) {
+                    splashStatus.setText("Syncing student workspace…");
+                }
+            }
+        }, 3000);
+
+        // Fallback retry button if network takes > 10 seconds
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!isSplashDismissed) {
+                    showSplashRetry("Slow connection. Tap below to retry or wait.");
+                }
+            }
+        }, 10000);
+
         // Configure WebView Settings
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -276,7 +373,7 @@ public class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " UltraPortalApp/2.4");
+        settings.setUserAgentString(settings.getUserAgentString() + " KronoApp/2.7");
 
         // Enable Cookies
         CookieManager cookieManager = CookieManager.getInstance();
@@ -326,9 +423,22 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                super.onPageCommitVisible(view, url);
+                dismissSplash();
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 CookieManager.getInstance().flush();
+                dismissSplash();
+            }
+
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                super.onReceivedError(view, errorCode, description, failingUrl);
+                showSplashRetry("Could not connect to Krono. Check internet connection.");
             }
         });
 

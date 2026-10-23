@@ -140,6 +140,33 @@
     </style>
 </head>
 <body>
+    <!-- Krono Fluid Startup Splash Curtain (Dismisses smoothly once workspace is ready) -->
+    <div id="krono-web-splash" class="krono-splash-curtain" aria-hidden="true">
+        <div class="krono-splash-content">
+            <div class="krono-splash-mark-wrap">
+                <svg class="krono-splash-logo" width="76" height="76" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="kronoSplashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#60A5FA" />
+                            <stop offset="100%" stop-color="#2563EB" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="100" height="100" rx="24" fill="#090B0E" stroke="#242B3C" stroke-width="3"/>
+                    <rect x="22" y="22" width="13" height="56" rx="6.5" fill="#FAFAFA" />
+                    <path d="M 41 53 L 66 28 C 68.5 25.5 72.5 25.5 75 28 C 77.5 30.5 77.5 34.5 75 37 L 53 59 C 51 61 47 61 45 59 Z" fill="url(#kronoSplashGrad)" />
+                    <path d="M 45 44 L 75 74 C 77.5 76.5 77.5 80.5 75 83 C 72.5 85.5 68.5 85.5 66 83 L 41 58 C 39 56 39 52 41 50 Z" fill="url(#kronoSplashGrad)" />
+                </svg>
+                <div class="krono-splash-glow"></div>
+            </div>
+            <div class="krono-splash-brand">
+                <span class="krono-splash-title">Krono</span>
+                <span class="krono-splash-subtitle">Student Workspace</span>
+            </div>
+            <div class="krono-splash-track">
+                <div class="krono-splash-bar"></div>
+            </div>
+        </div>
+    </div>
     <div class="login-card">
         <div class="login-top-bar">
             <span class="badge">KRONO v{{ app_version }}</span>
@@ -373,6 +400,28 @@
                     }, 1200);
                 });
             }
+
+        // Dismiss web splash smoothly when page is ready
+        window.addEventListener("load", function () {
+            var splash = document.getElementById("krono-web-splash");
+            if (splash) {
+                setTimeout(function () {
+                    splash.classList.add("is-loaded");
+                    setTimeout(function () {
+                        if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+                    }, 400);
+                }, 120);
+            }
+        });
+        setTimeout(function () {
+            var splash = document.getElementById("krono-web-splash");
+            if (splash && !splash.classList.contains("is-loaded")) {
+                splash.classList.add("is-loaded");
+                setTimeout(function () {
+                    if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+                }, 400);
+            }
+        }, 1800);
         });
     </script>
 </body>

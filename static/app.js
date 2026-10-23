@@ -38,6 +38,24 @@ window.toggleKronoTheme = function () {
 // Auto initialize immediately
 window.initKronoTheme();
 
+// Web Splash Dismissal Controller
+window.dismissKronoWebSplash = function () {
+    var splash = document.getElementById("krono-web-splash");
+    if (splash && !splash.classList.contains("is-loaded")) {
+        splash.classList.add("is-loaded");
+        setTimeout(function () {
+            if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+        }, 400);
+    }
+};
+
+window.addEventListener("load", function () {
+    setTimeout(window.dismissKronoWebSplash, 120);
+});
+
+// Fallback safety timeout (1.8s)
+setTimeout(window.dismissKronoWebSplash, 1800);
+
 document.addEventListener("DOMContentLoaded", function () {
     const rawData = document.getElementById("portal-data-json").textContent;
     const portalData = JSON.parse(rawData || "{}");

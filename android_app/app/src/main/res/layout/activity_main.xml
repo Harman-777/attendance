@@ -2,12 +2,86 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#090D16">
+    android:background="@color/bg_dark">
 
     <WebView
         android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#090D16" />
+        android:background="@color/bg_dark" />
+
+    <!-- Native Splash & Alive Animation Overlay (dismissed once WebView is ready) -->
+    <LinearLayout
+        android:id="@+id/splashOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="@color/bg_dark"
+        android:clickable="true"
+        android:focusable="true">
+
+        <!-- Centered Pulsing Krono App Icon -->
+        <ImageView
+            android:id="@+id/splashLogo"
+            android:layout_width="88dp"
+            android:layout_height="88dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="@string/app_name" />
+
+        <!-- App Brand Typography -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Krono"
+            android:textColor="@color/white_text"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.03"
+            android:layout_marginTop="18dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Student Workspace"
+            android:textColor="@color/slate_text"
+            android:textSize="13sp"
+            android:letterSpacing="0.02"
+            android:layout_marginTop="4dp" />
+
+        <!-- High-tech Cyan Indeterminate Progress Bar -->
+        <ProgressBar
+            android:id="@+id/splashProgress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="140dp"
+            android:layout_height="4dp"
+            android:indeterminate="true"
+            android:indeterminateTint="@color/cyan_accent"
+            android:layout_marginTop="32dp" />
+
+        <!-- Alive Status Indicator -->
+        <TextView
+            android:id="@+id/splashStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Loading workspace…"
+            android:textColor="@color/slate_text"
+            android:textSize="11sp"
+            android:layout_marginTop="12dp" />
+
+        <!-- Offline Retry Button (Displayed if page load times out or fails) -->
+        <Button
+            android:id="@+id/btnSplashRetry"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Offline or Slow — Tap to Retry"
+            android:visibility="gone"
+            android:layout_marginTop="20dp"
+            android:backgroundTint="@color/cyan_accent"
+            android:textColor="#090B0E"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
 
 </FrameLayout>
