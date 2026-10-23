@@ -58,7 +58,7 @@ function updatePwaInstallButtonState() {
     }
 }
 
-const EXTERNAL_APK_DOWNLOAD_URL = "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk";
+const EXTERNAL_APK_DOWNLOAD_URL = "https://raw.githubusercontent.com/Harman-777/attendance/main/static/apk/Krono.apk";
 
 function showApkToast(msg) {
     let toast = document.getElementById("apk-update-toast");

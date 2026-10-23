@@ -1343,7 +1343,7 @@ def download_apk():
         resp.headers["Pragma"] = "no-cache"
         resp.headers["Expires"] = "0"
         return resp
-    return redirect("https://github.com/Harman-777/attendance/releases/latest/download/UltraPortal.apk")
+    return redirect(f"https://raw.githubusercontent.com/Harman-777/attendance/main/static/apk/{dl_name}")
 
 
 @app.route("/api/app-version")
