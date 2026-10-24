@@ -103,12 +103,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getAppVersion() {
-            return "3.0";
+            return "3.1";
         }
 
         @JavascriptInterface
         public int getAppVersionCode() {
-            return 12;
+            return 13;
         }
 
         @JavascriptInterface
@@ -275,6 +275,16 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void openExternalBrowser(final String url) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    openInSystemBrowser(url);
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void installDownloadedUpdate() {
             activity.runOnUiThread(new Runnable() {
                 @Override
@@ -347,6 +357,21 @@ public class MainActivity extends Activity {
                 if (btnSplashRetry != null) btnSplashRetry.setVisibility(View.VISIBLE);
             }
         });
+    }
+
+    public void openInSystemBrowser(String url) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Exception e) {
+            try {
+                Intent chooser = Intent.createChooser(new Intent(Intent.ACTION_VIEW, Uri.parse(url)), "Open with");
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(chooser);
+            } catch (Exception ignored) {}
+        }
     }
     @SuppressLint("SetJavaScriptEnabled")
 
@@ -445,7 +470,7 @@ public class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " KronoApp/3.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " KronoApp/3.1");
         // Enable Cookies
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -483,6 +508,13 @@ public class MainActivity extends Activity {
                                 return true;
                             } catch (Exception ignored) {}
                         }
+                    }
+                    // External links (e.g. github.com) must open in external system browser
+                    Uri parsedUri = request.getUrl();
+                    String host = parsedUri != null ? parsedUri.getHost() : null;
+                    if (host != null && !host.contains("vercel.app") && !host.contains("attendance")) {
+                        openInSystemBrowser(url);
+                        return true;
                     }
                     if (url.contains("/download/") || url.endsWith(".apk")) {
                         startDownload(url);
@@ -555,6 +587,13 @@ public class MainActivity extends Activity {
             installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             installIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+            java.util.List<android.content.pm.ResolveInfo> resolveInfoList = getPackageManager().queryIntentActivities(installIntent, PackageManager.MATCH_DEFAULT_ONLY);
+            for (android.content.pm.ResolveInfo resolveInfo : resolveInfoList) {
+                String packageName = resolveInfo.activityInfo.packageName;
+                grantUriPermission(packageName, contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            }
+
             startActivity(installIntent);
         } catch (Exception e) {
             e.printStackTrace();
@@ -588,7 +627,7 @@ public class MainActivity extends Activity {
                         conn.setInstanceFollowRedirects(true);
                         conn.setConnectTimeout(15000);
                         conn.setReadTimeout(20000);
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 KronoApp/3.0");
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 KronoApp/3.1");
                         conn.connect();
                         int code = conn.getResponseCode();
                         if (code >= 300 && code < 400) {
@@ -697,6 +736,37 @@ public class MainActivity extends Activity {
             installApk(publicApk);
             return;
         }
+
+        // Query DownloadManager for any completed download
+        try {
+            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            if (dm != null) {
+                DownloadManager.Query query = new DownloadManager.Query();
+                query.setFilterByStatus(DownloadManager.STATUS_SUCCESSFUL);
+                android.database.Cursor c = dm.query(query);
+                if (c != null) {
+                    try {
+                        while (c.moveToNext()) {
+                            int titleIdx = c.getColumnIndex(DownloadManager.COLUMN_TITLE);
+                            int uriIdx = c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI);
+                            if (titleIdx != -1 && uriIdx != -1) {
+                                String title = c.getString(titleIdx);
+                                String localUri = c.getString(uriIdx);
+                                if (title != null && (title.contains("Krono") || title.contains("UltraPortal")) && localUri != null) {
+                                    Intent installIntent = new Intent(Intent.ACTION_VIEW);
+                                    installIntent.setDataAndType(Uri.parse(localUri), "application/vnd.android.package-archive");
+                                    installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    startActivity(installIntent);
+                                    return;
+                                }
+                            }
+                        }
+                    } finally {
+                        c.close();
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
 
         Toast.makeText(MainActivity.this, "Downloading latest update...", Toast.LENGTH_SHORT).show();
         startDownload(PORTAL_URL + "/download/Krono.apk");

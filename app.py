@@ -54,8 +54,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "3.0"
-APP_VERSION_CODE = 12
+APP_VERSION = "3.1"
+APP_VERSION_CODE = 13
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()

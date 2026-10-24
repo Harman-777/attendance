@@ -60,6 +60,22 @@ function updatePwaInstallButtonState() {
 
 const EXTERNAL_APK_DOWNLOAD_URL = "https://github.com/Harman-777/attendance/raw/main/static/apk/Krono.apk";
 const GITHUB_DIRECT_APK_URL = "https://github.com/Harman-777/attendance/raw/main/static/apk/Krono.apk";
+const GITHUB_BROWSER_INTENT_URL = "intent://github.com/Harman-777/attendance/raw/main/static/apk/Krono.apk#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;end";
+
+function openExternalBrowser(url) {
+    const targetUrl = url || GITHUB_DIRECT_APK_URL;
+    if (window.AndroidApp && typeof window.AndroidApp.openExternalBrowser === "function") {
+        window.AndroidApp.openExternalBrowser(targetUrl);
+        return;
+    }
+    // Android intent scheme bypasses internal WebView .apk interception and launches Chrome / system browser
+    if (/Android|wv/i.test(navigator.userAgent) || window.AndroidApp) {
+        window.location.href = GITHUB_BROWSER_INTENT_URL;
+    } else {
+        window.open(targetUrl, "_blank", "noopener,noreferrer");
+    }
+}
+window.openExternalBrowser = openExternalBrowser;
 
 window.triggerInstallNow = function () {
     if (window.AndroidApp && typeof window.AndroidApp.installDownloadedUpdate === "function") {
@@ -67,7 +83,9 @@ window.triggerInstallNow = function () {
     } else if (window.AndroidApp && typeof window.AndroidApp.installUpdate === "function") {
         window.AndroidApp.installUpdate();
     } else {
-        window.location.href = GITHUB_DIRECT_APK_URL;
+        // Fallback for older APKs: open external browser so Chrome downloads & pops native "Open -> Install" prompt!
+        // Bypasses internal WebView re-download loop!
+        openExternalBrowser(GITHUB_DIRECT_APK_URL);
     }
 };
 
@@ -153,10 +171,10 @@ function showUpdateProgressCard(targetUrl) {
             Package installer will launch automatically. If on an older build, tap below to open in your browser to install immediately.
         </p>
         <div style="display: flex; gap: 8px; justify-content: center;">
-            <a href="${GITHUB_DIRECT_APK_URL}" target="_blank" rel="noopener noreferrer" style="flex: 1; padding: 10px 14px; background: #2563EB; color: #FFF; font-weight: 700; font-size: 0.85rem; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            <button type="button" onclick="openExternalBrowser(GITHUB_DIRECT_APK_URL)" style="flex: 1; padding: 10px 14px; background: #2563EB; color: #FFF; font-weight: 700; font-size: 0.85rem; border: none; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Install via Browser
-            </a>
+            </button>
             <button type="button" onclick="this.closest('#krono-update-helper').remove()" style="padding: 10px 14px; background: #20202B; color: #94A3B8; font-weight: 600; font-size: 0.85rem; border: 1px solid #3E3E4E; border-radius: 10px; cursor: pointer;">
                 Close
             </button>
