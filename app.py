@@ -54,8 +54,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "2.9"
-APP_VERSION_CODE = 11
+APP_VERSION = "3.0"
+APP_VERSION_CODE = 12
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -1371,7 +1371,7 @@ def api_app_version():
         "version_code": APP_VERSION_CODE,
         "release_date": "24 Oct 2026",
         "download_url": "/download/Krono.apk",
-        "external_download_url": "https://raw.githubusercontent.com/Harman-777/attendance/main/static/apk/Krono.apk",
+        "external_download_url": "https://github.com/Harman-777/attendance/raw/main/static/apk/Krono.apk",
         "changelog": [
             "Complete flagship rebrand to Krono v2.7 with precision geometric chevron logo",
             "Studio-grade Dual Theme System: Pitch-Black OLED Dark + Paper-White Light Mode",
