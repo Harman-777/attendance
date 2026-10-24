@@ -53,8 +53,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "2.7"
-APP_VERSION_CODE = 9
+APP_VERSION = "2.8"
+APP_VERSION_CODE = 10
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -747,7 +747,7 @@ def api_test_push():
     save_push_or_email_prefs(student_id, push_sub=sub, auto_sync=True)
     ok, msg = send_web_push(
         sub,
-        "⚡ Krono Lock-Screen Push Active!",
+        "Krono Lock-Screen Push Active!",
         "Your device is now linked to Supabase. Any new ABSENT mark will alert you automatically!"
     )
     return jsonify({"ok": ok, "message": msg})
@@ -1216,7 +1216,7 @@ def api_admin_reply_feedback():
         if u_rec and u_rec.get("push_subscription"):
             send_web_push(
                 u_rec["push_subscription"],
-                title=f"💬 Developer Replied to Your {updated_row.get('category', 'Feedback')}",
+                title=f"Developer Replied to Your {updated_row.get('category', 'Feedback')}",
                 body=reply[:120],
                 url="/dashboard"
             )
@@ -1237,7 +1237,7 @@ def api_admin_delete_feedback():
 def api_admin_broadcast_push():
     req = request.get_json() or {}
     target = (req.get("target") or "all").strip()
-    title = (req.get("title") or "⚡ Krono Announcement").strip()
+    title = (req.get("title") or "Krono Announcement").strip()
     body = (req.get("body") or "").strip()
 
     if not body:
@@ -1289,7 +1289,7 @@ def api_admin_user_action():
         if not data:
             return jsonify({"ok": False, "message": f"Sync failed: {err}"})
         sync_user_to_supabase(student_id, plain_pw, data, is_login_event=False)
-        return jsonify({"ok": True, "message": f"✔ Live portal sync completed for {student_id}!"})
+        return jsonify({"ok": True, "message": f"Live portal sync completed for {student_id}!"})
 
     ok, msg = admin_manage_user(student_id, action)
     return jsonify({"ok": ok, "message": msg})
@@ -1351,7 +1351,7 @@ def api_app_version():
     return jsonify({
         "latest_version": APP_VERSION,
         "version_code": APP_VERSION_CODE,
-        "release_date": "22 Oct 2026",
+        "release_date": "24 Oct 2026",
         "download_url": "/download/Krono.apk",
         "external_download_url": "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk",
         "changelog": [

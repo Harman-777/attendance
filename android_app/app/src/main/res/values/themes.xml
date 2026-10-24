@@ -3,6 +3,6 @@
     <style name="Theme.UltraPortal" parent="@android:style/Theme.DeviceDefault.NoActionBar">
         <item name="android:statusBarColor">@color/bg_dark</item>
         <item name="android:navigationBarColor">@color/nav_bar</item>
-        <item name="android:windowBackground">@color/bg_dark</item>
+        <item name="android:windowBackground">@drawable/splash_background</item>
     </style>
 </resources>

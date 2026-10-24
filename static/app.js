@@ -38,23 +38,28 @@ window.toggleKronoTheme = function () {
 // Auto initialize immediately
 window.initKronoTheme();
 
-// Web Splash Dismissal Controller
+// Web Splash Dismissal Controller (Ensures fluid alive animation display for at least 1.3s)
 window.dismissKronoWebSplash = function () {
     var splash = document.getElementById("krono-web-splash");
-    if (splash && !splash.classList.contains("is-loaded")) {
-        splash.classList.add("is-loaded");
-        setTimeout(function () {
-            if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
-        }, 400);
-    }
+    if (!splash || splash.classList.contains("is-loaded")) return;
+    var elapsed = Date.now() - (window.__kronoLaunchTime || Date.now());
+    var minWait = Math.max(0, 1300 - elapsed);
+    setTimeout(function () {
+        if (splash && !splash.classList.contains("is-loaded")) {
+            splash.classList.add("is-loaded");
+            setTimeout(function () {
+                if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+            }, 400);
+        }
+    }, minWait);
 };
 
 window.addEventListener("load", function () {
-    setTimeout(window.dismissKronoWebSplash, 120);
+    window.dismissKronoWebSplash();
 });
 
-// Fallback safety timeout (1.8s)
-setTimeout(window.dismissKronoWebSplash, 1800);
+// Fallback safety timeout (3.5s)
+setTimeout(window.dismissKronoWebSplash, 3500);
 
 document.addEventListener("DOMContentLoaded", function () {
     const rawData = document.getElementById("portal-data-json").textContent;

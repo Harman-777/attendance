@@ -13,6 +13,7 @@
     <title>Krono — Student Workspace</title>
     <script>
         (function() {
+            window.__kronoLaunchTime = Date.now();
             var savedTheme = localStorage.getItem("krono_theme") || "dark";
             document.documentElement.setAttribute("data-theme", savedTheme);
         })();

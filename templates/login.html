@@ -12,6 +12,7 @@
     <title>Krono — Login</title>
     <script>
         (function() {
+            window.__kronoLaunchTime = Date.now();
             var savedTheme = localStorage.getItem("krono_theme") || "dark";
             document.documentElement.setAttribute("data-theme", savedTheme);
         })();
@@ -401,27 +402,23 @@
                 });
             }
 
-        // Dismiss web splash smoothly when page is ready
-        window.addEventListener("load", function () {
+        // Dismiss web splash smoothly when page is ready (ensuring fluid alive animation)
+        function dismissKronoSplashCurtain() {
             var splash = document.getElementById("krono-web-splash");
-            if (splash) {
-                setTimeout(function () {
+            if (!splash || splash.classList.contains("is-loaded")) return;
+            var elapsed = Date.now() - (window.__kronoLaunchTime || Date.now());
+            var minWait = Math.max(0, 1300 - elapsed);
+            setTimeout(function () {
+                if (splash && !splash.classList.contains("is-loaded")) {
                     splash.classList.add("is-loaded");
                     setTimeout(function () {
                         if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
                     }, 400);
-                }, 120);
-            }
-        });
-        setTimeout(function () {
-            var splash = document.getElementById("krono-web-splash");
-            if (splash && !splash.classList.contains("is-loaded")) {
-                splash.classList.add("is-loaded");
-                setTimeout(function () {
-                    if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
-                }, 400);
-            }
-        }, 1800);
+                }
+            }, minWait);
+        }
+        window.addEventListener("load", dismissKronoSplashCurtain);
+        setTimeout(dismissKronoSplashCurtain, 3500);
         });
     </script>
 </body>

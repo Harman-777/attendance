@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Base dark background matching Krono canvas -->
+    <item android:drawable="@color/bg_dark" />
+    
+    <!-- Centered Krono App Launcher Icon (visible instantly on OS cold boot) -->
+    <item
+        android:drawable="@mipmap/ic_launcher"
+        android:gravity="center"
+        android:width="92dp"
+        android:height="92dp" />
+</layer-list>

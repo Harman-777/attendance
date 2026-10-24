@@ -54,6 +54,7 @@ public class MainActivity extends Activity {
     private TextView splashStatus;
     private Button btnSplashRetry;
     private boolean isSplashDismissed = false;
+    private long launchTimestamp = 0;
 
     public class WebAppInterface {
         private final Activity activity;
@@ -64,12 +65,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getAppVersion() {
-            return "2.7";
+            return "2.8";
         }
 
         @JavascriptInterface
         public int getAppVersionCode() {
-            return 9;
+            return 10;
         }
 
         @JavascriptInterface
@@ -210,7 +211,7 @@ public class MainActivity extends Activity {
                         Intent sendIntent = new Intent();
                         sendIntent.setAction(Intent.ACTION_SEND);
                         sendIntent.putExtra(Intent.EXTRA_TEXT, text);
-                        sendIntent.putExtra(Intent.EXTRA_SUBJECT, "⚡ Krono — Student Workspace");
+                        sendIntent.putExtra(Intent.EXTRA_SUBJECT, "Krono — Student Workspace");
                         sendIntent.setType("text/plain");
                         Intent chooser = Intent.createChooser(sendIntent, "Share Krono via");
                         chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -244,7 +245,11 @@ public class MainActivity extends Activity {
     private void dismissSplash() {
         if (isSplashDismissed || splashOverlay == null) return;
         isSplashDismissed = true;
-        runOnUiThread(new Runnable() {
+        long elapsed = System.currentTimeMillis() - launchTimestamp;
+        long minDuration = 1400;
+        long delay = Math.max(0, minDuration - elapsed);
+
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
                 if (splashOverlay != null && splashOverlay.getVisibility() == View.VISIBLE) {
@@ -265,7 +270,7 @@ public class MainActivity extends Activity {
                         .start();
                 }
             }
-        });
+        }, delay);
     }
 
     private void showSplashRetry(final String message) {
@@ -284,6 +289,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        launchTimestamp = System.currentTimeMillis();
 
         // Customize system status bar & navigation bar to match #090D16
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -373,7 +379,7 @@ public class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " KronoApp/2.7");
+        settings.setUserAgentString(settings.getUserAgentString() + " KronoApp/2.8");
 
         // Enable Cookies
         CookieManager cookieManager = CookieManager.getInstance();
@@ -482,7 +488,7 @@ public class MainActivity extends Activity {
                         request.setMimeType("application/vnd.android.package-archive");
                         dm.enqueue(request);
 
-                        Toast.makeText(MainActivity.this, "⬇️ Downloading update... Check notification bar.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(MainActivity.this, "Downloading update... Check notification bar.", Toast.LENGTH_LONG).show();
                         return;
                     }
                 } catch (Exception e) {
