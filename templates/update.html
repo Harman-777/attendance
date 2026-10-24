@@ -140,20 +140,20 @@
 </head>
 <body>
     <div class="update-card">
-        <span class="update-badge">⚡ OFFICIAL UPDATE CENTER</span>
+        <span class="update-badge">OFFICIAL UPDATE CENTER</span>
         <h1 class="update-title">Krono v{{ app_version }}</h1>
         <p class="update-desc">
             An updated signed Android APK is ready with native background auto-updates, faster timetable sync, and direct WhatsApp mobile integration.
         </p>
 
         <div class="changelog-box">
-            <b>✨ What's New in Krono v{{ app_version }}:</b>
+            <b>What's New in Krono v{{ app_version }}:</b>
             <ul>
-                <li>⚡ Flagship rebrand to Krono with studio-grade geometric chevron logo</li>
-                <li>🌓 Dual Theme System: Pitch-Black OLED Dark + Paper-White Light Mode</li>
-                <li>🎨 1.5px / 1.75px crisp Lucide vector line icons replacing all emojis</li>
-                <li>📱 Native Android status bar &amp; navigation bar theme synchronization</li>
-                <li>📊 Monospace tabular figures for attendance percentages &amp; SGPA</li>
+                <li>Flagship rebrand to Krono with studio-grade geometric chevron logo</li>
+                <li>Dual Theme System: Pitch-Black OLED Dark + Paper-White Light Mode</li>
+                <li>1.5px / 1.75px crisp Lucide vector line icons replacing all emojis</li>
+                <li>Native Android status bar &amp; navigation bar theme synchronization</li>
+                <li>Monospace tabular figures for attendance percentages &amp; SGPA</li>
             </ul>
         </div>
 
@@ -162,11 +162,11 @@
         </a>
 
         <button type="button" id="btn-copy-update-link" class="btn-action btn-secondary" onclick="copyUpdateLink()">
-            📋 Copy Download Link
+            Copy Download Link
         </button>
 
         <button type="button" id="btn-share-update" class="btn-action btn-secondary" onclick="shareUpdateLink()">
-            📤 Open via System App / Share
+            Share / Open Download Link
         </button>
 
         <p id="copy-status" class="copy-confirm"></p>
@@ -196,13 +196,13 @@
         function showFeedback() {
             const p = document.getElementById("copy-status");
             if (p) {
-                p.textContent = "✔ Direct APK download link copied to clipboard!";
+                p.textContent = "Direct APK download link copied to clipboard!";
                 setTimeout(function () { p.textContent = ""; }, 4000);
             }
         }
 
         function shareUpdateLink() {
-            const msg = "⚡ Download Krono v{{ app_version }} APK: " + EXTERNAL_APK_DOWNLOAD_URL;
+            const msg = "Download Krono v{{ app_version }} APK: " + EXTERNAL_APK_DOWNLOAD_URL;
             if (window.AndroidApp && typeof window.AndroidApp.shareApp === "function") {
                 window.AndroidApp.shareApp(msg, EXTERNAL_APK_DOWNLOAD_URL);
             } else if (navigator.share) {

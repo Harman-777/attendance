@@ -10,4 +10,3 @@ __pycache__/
 scratch/
 snapshot_*.json
 cache/
-*.apk

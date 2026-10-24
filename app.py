@@ -1,3 +1,4 @@
+import urllib.request
 import os
 import hmac
 import html
@@ -53,8 +54,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "2.8"
-APP_VERSION_CODE = 10
+APP_VERSION = "2.9"
+APP_VERSION_CODE = 11
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -1339,11 +1340,28 @@ def download_apk():
             download_name=dl_name,
             mimetype="application/vnd.android.package-archive"
         ))
+        resp.headers["Content-Type"] = "application/vnd.android.package-archive"
         resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         resp.headers["Pragma"] = "no-cache"
         resp.headers["Expires"] = "0"
         return resp
-    return redirect(f"https://raw.githubusercontent.com/Harman-777/attendance/main/static/apk/{dl_name}")
+
+    # Fallback: stream directly from GitHub repository with guaranteed package-archive MIME type
+    try:
+        remote_url = f"https://raw.githubusercontent.com/Harman-777/attendance/main/static/apk/{dl_name}"
+        remote_req = urllib.request.Request(remote_url, headers={"User-Agent": "Mozilla/5.0 KronoApp/2.9"})
+        with urllib.request.urlopen(remote_req, timeout=20) as remote_resp:
+            apk_data = remote_resp.read()
+            resp = make_response(apk_data)
+            resp.headers["Content-Type"] = "application/vnd.android.package-archive"
+            resp.headers["Content-Disposition"] = f'attachment; filename="{dl_name}"'
+            resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
+            return resp
+    except Exception as e:
+        logger.error(f"Failed to stream APK from GitHub: {e}")
+        return redirect(f"https://raw.githubusercontent.com/Harman-777/attendance/main/static/apk/{dl_name}")
 
 
 @app.route("/api/app-version")
@@ -1353,7 +1371,7 @@ def api_app_version():
         "version_code": APP_VERSION_CODE,
         "release_date": "24 Oct 2026",
         "download_url": "/download/Krono.apk",
-        "external_download_url": "https://github.com/Harman-777/attendance/raw/main/static/apk/UltraPortal.apk",
+        "external_download_url": "https://raw.githubusercontent.com/Harman-777/attendance/main/static/apk/Krono.apk",
         "changelog": [
             "Complete flagship rebrand to Krono v2.7 with precision geometric chevron logo",
             "Studio-grade Dual Theme System: Pitch-Black OLED Dark + Paper-White Light Mode",
