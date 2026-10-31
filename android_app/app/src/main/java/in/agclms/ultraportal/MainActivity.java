@@ -51,8 +51,8 @@ import android.os.Looper;
 
 public class MainActivity extends Activity {
     private static final String PORTAL_URL = "https://attendance-liard-three.vercel.app";
-    private static final int DARK_BG_COLOR = 0xFF090B0E;
-    private static final int LIGHT_BG_COLOR = 0xFFE4E8EE;
+    private static final int DARK_BG_COLOR = 0xFF0B0F17;
+    private static final int LIGHT_BG_COLOR = 0xFFEBEEF3;
     private WebView webView;
     private View splashOverlay;
     private ImageView splashLogo;

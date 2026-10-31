@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg_dark">#090B0E</color>
+    <color name="bg_dark">#0B0F17</color>
     <color name="cyan_accent">#38BDF8</color>
     <color name="purple_accent">#7C3AED</color>
     <color name="slate_text">#94A3B8</color>
     <color name="white_text">#F8FAFC</color>
-    <color name="nav_bar">#090B0E</color>
+    <color name="nav_bar">#0B0F17</color>
 </resources>

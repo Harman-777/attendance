@@ -8,6 +8,9 @@
     <link rel="icon" type="image/svg+xml" href="/static/icons/krono-logo.svg">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/app_hub.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/style.css?v={{ app_version }}">
     <title>Krono — Student Workspace</title>
@@ -487,15 +490,12 @@
                         marks to see the exact external score needed:</p>
                     <div style="display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
                         <div style="flex: 1;">
-                            <label style="font-size: 0.8rem; color: #9ca3af; display: block; margin-bottom: 4px;">Your
-                                Internal Marks (out of 40)</label>
+                            <label style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 6px;">Your Internal Marks (out of 40)</label>
                             <input type="number" id="pred-internal" class="form-input" value="32" min="0" max="40"
                                 style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
-                            <label
-                                style="font-size: 0.8rem; color: #9ca3af; display: block; margin-bottom: 4px;">External
-                                Exam Max Marks</label>
+                            <label style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 6px;">External Exam Max Marks</label>
                             <input type="number" id="pred-external-max" class="form-input" value="60" min="40" max="100"
                                 style="width: 100%;">
                         </div>
@@ -560,7 +560,7 @@
         <!-- 5. SMART ALERTS & WRONG-ABSENT DISPUTE TAB -->
         <div id="tab-alerts" class="tab-panel">
             <div
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 24px;">
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 24px; align-items: start;">
 
                 <!-- Browser & Email Absent Alert Card -->
                 <div class="card">
@@ -581,7 +581,7 @@
 
                     <h4 style="font-size: 1rem; margin-bottom: 10px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> Email Absent Alert Setup</h4>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <hr style="border: none; border-top: 1px solid #1f2937; margin: 20px 0;">
+                        <hr style="border: none; border-top: 1px solid var(--border-subtle); margin: 20px 0;">
                         <h4 style="font-size: 1rem; margin-bottom: 6px; color: var(--accent-primary); display: flex; align-items: center; gap: 8px;"><svg class="krono-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Cloud Password Vault (24/7 Auto-Sync &amp; 0.4s Instant Login)</h4>
                         <p style="color: var(--text-secondary); font-size: 0.84rem; margin-bottom: 12px;">
                             Opt-in to store your password encrypted with AES-256 in Supabase so GitHub Actions can check
@@ -621,59 +621,72 @@
                         }
                         .ultra-fb-field {
                             width: 100%;
-                            background: #0b1120 !important;
-                            color: #f8fafc !important;
-                            border: 1px solid #334155 !important;
+                            background: var(--bg-elevated) !important;
+                            color: var(--text-primary) !important;
+                            border: 1px solid var(--border-subtle) !important;
                             border-radius: 12px !important;
                             padding: 11px 14px !important;
                             font-size: 0.9rem !important;
                             outline: none !important;
+                            font-family: inherit;
                             transition: border-color 0.2s, box-shadow 0.2s;
                         }
                         .ultra-fb-field:focus {
-                            border-color: #a855f7 !important;
-                            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2) !important;
+                            border-color: var(--border-focus) !important;
+                            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
                         }
                         .ultra-fb-field option {
-                            background: #0f172a;
-                            color: #f8fafc;
+                            background: var(--bg-card);
+                            color: var(--text-primary);
                         }
                         .ultra-fb-btn {
                             width: 100%;
-                            padding: 12px 18px;
+                            padding: 13px 18px;
                             border-radius: 12px;
-                            border: 1px solid rgba(168, 85, 247, 0.45);
-                            background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(37, 99, 235, 0.25));
-                            color: #e9d5ff;
+                            border: none;
+                            background: linear-gradient(135deg, #7c3aed, #0284c7);
+                            color: #ffffff !important;
                             font-weight: 700;
                             font-size: 0.92rem;
                             cursor: pointer;
-                            transition: all 0.2s ease;
+                            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+                            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, filter 0.2s ease;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
                         }
                         .ultra-fb-btn:hover {
-                            background: linear-gradient(135deg, rgba(124, 58, 237, 0.45), rgba(37, 99, 235, 0.45));
-                            border-color: #a855f7;
-                            color: #ffffff;
+                            filter: brightness(1.1);
+                            transform: translateY(-1px);
+                            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45);
+                        }
+                        .ultra-fb-btn:active {
+                            transform: scale(0.98);
                         }
                         .admin-broadcast-banner {
-                            background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(14, 165, 233, 0.15));
-                            border: 1px solid rgba(168, 85, 247, 0.45);
+                            background: rgba(124, 58, 237, 0.08);
+                            border: 1px solid rgba(124, 58, 237, 0.3);
                             border-radius: 12px;
-                            padding: 12px 16px;
+                            padding: 14px 18px;
                             margin-bottom: 16px;
+                        }
+                        [data-theme="dark"] .admin-broadcast-banner {
+                            background: rgba(124, 58, 237, 0.14);
+                            border-color: rgba(168, 85, 247, 0.35);
                         }
                     </style>
 
                     <div class="ultra-fb-wrap">
                         {% if admin_announcements %}
                         <div class="admin-broadcast-banner">
-                            <div style="font-size: 0.76rem; font-weight: 800; color: #c084fc; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
+                            <div style="font-size: 0.76rem; font-weight: 800; color: #7c3aed; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
                                 <svg class="krono-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> Official Developer Announcement
                             </div>
                             {% for ann in admin_announcements %}
                             <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08);">
-                                <div style="font-weight: 700; font-size: 0.92rem; color: #f8fafc;">{{ ann.message }}</div>
-                                <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 2px;">{{ ann.admin_reply }}</div>
+                                <div style="font-weight: 700; font-size: 0.92rem; color: var(--text-primary);">{{ ann.message }}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;">{{ ann.admin_reply }}</div>
                                 <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">{{ (ann.created_at or '')[:16].replace('T', ' ') }}</div>
                             </div>
                             {% endfor %}
@@ -711,7 +724,7 @@
                         <p id="fb-status-msg" style="font-size: 0.85rem; margin-top: 8px; font-weight: 600;"></p>
 
                         {% if user_feedback %}
-                        <div style="margin-top: 18px; border-top: 1px solid #1e293b; padding-top: 14px;">
+                        <div style="margin-top: 18px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
                             <h5 style="font-size: 0.86rem; color: #94a3b8; margin-bottom: 10px;">Your Submitted Feedback & Developer Replies:</h5>
                             {% for item in user_feedback %}
                             <div style="background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;">
@@ -855,8 +868,8 @@
                     <div style="width: 56px; height: 56px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(34, 197, 94, 0.15); display: flex; align-items: center; justify-content: center; color: #4ade80;">
                         <svg class="krono-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     </div>
-                    <h3 style="font-size: 1.25rem; color: #f8fafc; margin-bottom: 8px;">100% Fees Paid & Cleared</h3>
-                    <p style="color: #94a3b8; font-size: 0.92rem; max-width: 540px; margin: 0 auto 18px auto; line-height: 1.5;">
+                    <h3 style="font-size: 1.25rem; color: var(--text-primary); margin-bottom: 8px;">100% Fees Paid & Cleared</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.92rem; max-width: 540px; margin: 0 auto 18px auto; line-height: 1.5;">
                         No pending fee demands, fine penalties, or outstanding dues are registered against student roll <b>{{ data.student_id }}</b>.
                     </p>
                     <div style="display: inline-flex; gap: 12px; align-items: center; background: var(--bg-elevated); border: 1px solid var(--border-strong); padding: 8px 18px; border-radius: 10px; font-size: 0.84rem;">

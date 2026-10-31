@@ -7,6 +7,9 @@
     <link rel="icon" type="image/svg+xml" href="/static/icons/krono-logo.svg">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/app_hub.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/style.css?v={{ app_version }}">
     <title>Krono — Login</title>
@@ -20,7 +23,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: var(--bg-canvas);
             color: var(--text-primary);
             display: flex;
@@ -29,17 +32,47 @@
             min-height: 100vh;
             min-height: 100dvh;
             padding: clamp(16px, 4vw, 24px);
+            position: relative;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
             transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: clamp(340px, 80vw, 650px);
+            height: clamp(340px, 80vw, 650px);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.14) 0%, rgba(37, 99, 235, 0.05) 50%, transparent 72%);
+            filter: blur(60px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        [data-theme="light"] body::before {
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.09) 0%, rgba(96, 165, 250, 0.03) 55%, transparent 75%);
         }
         .login-card {
             background: var(--bg-card);
-            padding: clamp(28px, 6vw, 40px) clamp(20px, 5vw, 36px);
-            border-radius: clamp(14px, 3vw, 20px);
+            padding: clamp(28px, 6vw, 42px) clamp(20px, 5vw, 36px);
+            border-radius: clamp(16px, 3vw, 24px);
             width: 100%;
             max-width: 420px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45);
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
             border: 1px solid var(--border-subtle);
             position: relative;
+            z-index: 1;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        [data-theme="light"] .login-card {
+            background: #FFFFFF;
+            box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.10), 0 0 0 1px rgba(15, 23, 42, 0.05);
+            border: 1px solid #D8DFE9;
         }
         .login-top-bar {
             display: flex;
@@ -103,23 +136,30 @@
         input:focus { border-color: var(--border-focus); }
         button.btn-submit {
             width: 100%;
-            height: 48px;
-            background: var(--accent-primary);
+            height: 50px;
+            background: linear-gradient(135deg, #0284c7, #2563eb);
             color: #ffffff;
-            font-weight: 800;
+            font-weight: 700;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 1rem;
             cursor: pointer;
-            margin-top: 8px;
-            transition: all 0.15s;
+            margin-top: 10px;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, filter 0.2s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
         }
-        button.btn-submit:hover { opacity: 0.92; transform: translateY(-1px); }
-        button.btn-submit:active { transform: scale(0.98); }
+        button.btn-submit:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.45);
+        }
+        button.btn-submit:active {
+            transform: scale(0.97);
+        }
         .error {
             background: var(--status-absent-bg);
             border: 1px solid var(--status-absent-border);

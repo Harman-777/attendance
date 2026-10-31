@@ -304,12 +304,10 @@ document.addEventListener("DOMContentLoaded", function () {
             const achievable = neededExt <= extMax;
 
             const box = document.createElement("div");
-            box.style.background = "#1e293b";
-            box.style.padding = "10px 12px";
-            box.style.borderRadius = "8px";
+            box.className = "grade-pred-chip";
             box.innerHTML =
-                "<div style='color:#9ca3af; font-size:0.78rem;'>" + t.grade + "</div>" +
-                "<div style='font-weight:700; color:" + (achievable ? "#38bdf8" : "#f87171") + ";'>" +
+                "<div class='pred-grade'>" + t.grade + "</div>" +
+                "<div class='pred-score " + (achievable ? "achievable" : "unreachable") + "'>" +
                 (achievable ? "Need " + neededExt + " / " + extMax : "Out of reach") + "</div>";
             predOut.appendChild(box);
         });
