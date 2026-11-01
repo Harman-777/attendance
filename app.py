@@ -54,8 +54,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "3.2"
-APP_VERSION_CODE = 14
+APP_VERSION = "3.3"
+APP_VERSION_CODE = 15
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -1373,10 +1373,10 @@ def api_app_version():
         "download_url": "/download/Krono.apk",
         "external_download_url": "https://github.com/Harman-777/attendance/raw/main/static/apk/Krono.apk",
         "changelog": [
+            "Google Play Protect Clean: Zero elevated install permissions for 100% clean device scanning",
             "Studio UI Overhaul: Cosmic Slate Dark Mode + Alabaster Mist Light Mode",
             "Floating Mobile Island Dock navigation bar with frosted glass blur",
-            "Streamlined 1-Click in-app APK installer with auto-resuming permissions",
-            "Real-time download progress tracking and instant installer launch",
+            "Streamlined 1-Click native APK updater with real-time progress tracking",
             "Enhanced tabular marks & attendance prediction calculators"
         ]
     })

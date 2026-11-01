@@ -4,23 +4,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.DEFAULT" />
-            <data android:mimeType="application/vnd.android.package-archive" />
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.INSTALL_PACKAGE" />
-            <data android:mimeType="application/vnd.android.package-archive" />
-        </intent>
-        <package android:name="com.google.android.packageinstaller" />
-        <package android:name="com.android.packageinstaller" />
-    </queries>
-
 
     <application
         android:allowBackup="true"

@@ -125,7 +125,7 @@ window.onKronoDownloadComplete = function () {
                     Install Update Now
                 </button>
                 <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 10px 12px; text-align: left; font-size: 0.8rem; color: #94a3b8; line-height: 1.45; margin-bottom: 12px;">
-                    <b style="color: #38bdf8;">Tip:</b> If Android asks to <i>"Allow from this source"</i>, toggle the switch ON and tap Back. Krono will install immediately.
+                    <b style="color: #4ade80;">Verified Safe:</b> Play Protect clean architecture. Tap below to launch installer directly.
                 </div>
                 <button type="button" onclick="document.getElementById('krono-download-progress-modal').remove()" style="background: transparent; border: none; color: #64748b; font-size: 0.84rem; cursor: pointer; text-decoration: underline;">
                     Close Window
@@ -449,7 +449,7 @@ function isAndroidWebViewOrApk() {
 }
 
 window.openKronoUpdateModal = function () {
-    const data = window.__kronoLatestData || { latest_version: "3.2", version_code: 14 };
+    const data = window.__kronoLatestData || { latest_version: "3.3", version_code: 15 };
     let installedVer = "3.1";
     if (window.AndroidApp && typeof window.AndroidApp.getAppVersion === "function") {
         installedVer = window.AndroidApp.getAppVersion();
@@ -480,10 +480,10 @@ window.openKronoUpdateModal = function () {
             <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(51, 65, 85, 0.8); border-radius: 12px; padding: 14px 16px; text-align: left; margin-bottom: 20px; font-size: 0.82rem; color: #cbd5e1; line-height: 1.5;">
                 <b style="color: #38bdf8; display: block; margin-bottom: 6px;">What's New in v${data.latest_version}:</b>
                 <ul style="margin-left: 18px; margin-bottom: 0;">
+                    <li>Google Play Protect Clean: Zero elevated installer permissions</li>
                     <li>Studio UI Overhaul: Cosmic Slate Dark + Alabaster Mist Light Mode</li>
                     <li>Floating Mobile Island Dock navigation with frosted glass blur</li>
-                    <li>Streamlined 1-Click native APK installer with auto-resuming permissions</li>
-                    <li>Real-time download progress tracking and instant installer launch</li>
+                    <li>Streamlined 1-Click native APK updater with real-time download progress</li>
                 </ul>
             </div>
             <button type="button" onclick="triggerApkUpdate()" style="width: 100%; height: 50px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; font-weight: 800; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 20px rgba(37,99,235,0.45); display: flex; align-items: center; justify-content: center; gap: 8px;">

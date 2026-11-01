@@ -61,7 +61,6 @@ public class MainActivity extends Activity {
     private Button btnSplashRetry;
     private boolean isSplashDismissed = false;
     private long launchTimestamp = 0;
-    private File pendingInstallFile = null;
 
     private BroadcastReceiver downloadCompleteReceiver = new BroadcastReceiver() {
 
@@ -104,12 +103,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getAppVersion() {
-            return "3.2";
+            return "3.3";
         }
 
         @JavascriptInterface
         public int getAppVersionCode() {
-            return 14;
+            return 15;
         }
 
         @JavascriptInterface
@@ -474,7 +473,7 @@ public class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " KronoApp/3.2");
+        settings.setUserAgentString(settings.getUserAgentString() + " KronoApp/3.3");
         // Enable Cookies
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -575,45 +574,15 @@ public class MainActivity extends Activity {
             return;
         }
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (!getPackageManager().canRequestPackageInstalls()) {
-                    pendingInstallFile = apkFile;
-                    Toast.makeText(MainActivity.this, "Please allow Krono to install update, then tap back to install immediately.", Toast.LENGTH_LONG).show();
-                    Intent permissionIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
-                    permissionIntent.setData(Uri.parse("package:" + getPackageName()));
-                    permissionIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(permissionIntent);
-                    return;
-                }
-            }
-            pendingInstallFile = null;
             Intent installIntent = new Intent(Intent.ACTION_VIEW);
             Uri contentUri = Uri.parse("content://" + GenericFileProvider.AUTHORITY + "/Krono_update.apk");
             installIntent.setDataAndType(contentUri, "application/vnd.android.package-archive");
-            installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            installIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-            String[] installerPackages = new String[] {
-                "com.google.android.packageinstaller",
-                "com.android.packageinstaller"
-            };
-            for (String pkg : installerPackages) {
-                try {
-                    grantUriPermission(pkg, contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                } catch (Exception ignored) {}
-            }
-
-            java.util.List<android.content.pm.ResolveInfo> resolveInfoList = getPackageManager().queryIntentActivities(installIntent, PackageManager.MATCH_DEFAULT_ONLY);
-            for (android.content.pm.ResolveInfo resolveInfo : resolveInfoList) {
-                String packageName = resolveInfo.activityInfo.packageName;
-                grantUriPermission(packageName, contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            }
+            installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
             startActivity(installIntent);
         } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(MainActivity.this, "Launching installer failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            // Safe fallback to system browser download
+            openInSystemBrowser(PORTAL_URL + "/download/Krono.apk");
         }
     }
 
@@ -643,7 +612,7 @@ public class MainActivity extends Activity {
                         conn.setInstanceFollowRedirects(true);
                         conn.setConnectTimeout(15000);
                         conn.setReadTimeout(20000);
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 KronoApp/3.2");
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 KronoApp/3.3");
                         conn.connect();
                         int code = conn.getResponseCode();
                         if (code >= 300 && code < 400) {
@@ -850,13 +819,6 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         CookieManager.getInstance().flush();
-        if (pendingInstallFile != null && pendingInstallFile.exists()) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || getPackageManager().canRequestPackageInstalls()) {
-                File fileToInstall = pendingInstallFile;
-                pendingInstallFile = null;
-                installApk(fileToInstall);
-            }
-        }
     }
 
     @Override
