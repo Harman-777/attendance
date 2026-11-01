@@ -54,8 +54,8 @@ static_dir = next((d for d in possible_static_dirs if os.path.isdir(d)), os.path
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-APP_VERSION = "3.1"
-APP_VERSION_CODE = 13
+APP_VERSION = "3.2"
+APP_VERSION_CODE = 14
 
 # 1. Deterministic Serverless Secret Key (Prevents cold-start invalidation on Vercel without predictable fallbacks)
 secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -1366,20 +1366,24 @@ def download_apk():
 
 @app.route("/api/app-version")
 def api_app_version():
-    return jsonify({
+    resp = jsonify({
         "latest_version": APP_VERSION,
         "version_code": APP_VERSION_CODE,
-        "release_date": "24 Oct 2026",
+        "release_date": "01 Nov 2026",
         "download_url": "/download/Krono.apk",
         "external_download_url": "https://github.com/Harman-777/attendance/raw/main/static/apk/Krono.apk",
         "changelog": [
-            "Complete flagship rebrand to Krono v2.7 with precision geometric chevron logo",
-            "Studio-grade Dual Theme System: Pitch-Black OLED Dark + Paper-White Light Mode",
-            "1.5px / 1.75px Lucide vector line icons replacing all system emojis",
-            "Native Android system status bar & navigation bar theme synchronization",
-            "Tabular monospace typography for razor-sharp attendance statistics"
+            "Studio UI Overhaul: Cosmic Slate Dark Mode + Alabaster Mist Light Mode",
+            "Floating Mobile Island Dock navigation bar with frosted glass blur",
+            "Streamlined 1-Click in-app APK installer with auto-resuming permissions",
+            "Real-time download progress tracking and instant installer launch",
+            "Enhanced tabular marks & attendance prediction calculators"
         ]
     })
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 
 @app.route("/update")

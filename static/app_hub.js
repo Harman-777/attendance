@@ -83,47 +83,92 @@ window.triggerInstallNow = function () {
     } else if (window.AndroidApp && typeof window.AndroidApp.installUpdate === "function") {
         window.AndroidApp.installUpdate();
     } else {
-        // Fallback for older APKs: open external browser so Chrome downloads & pops native "Open -> Install" prompt!
-        // Bypasses internal WebView re-download loop!
         openExternalBrowser(GITHUB_DIRECT_APK_URL);
     }
 };
 
+window.onKronoDownloadProgress = function (pct) {
+    const bar = document.getElementById("krono-progress-bar");
+    const label = document.getElementById("krono-progress-label");
+    const safePct = Math.min(100, Math.max(0, parseInt(pct, 10) || 0));
+    if (bar) bar.style.width = safePct + "%";
+    if (label) label.textContent = safePct + "%";
+    if (safePct >= 100) {
+        window.onKronoDownloadComplete();
+    }
+};
+
 window.onKronoDownloadComplete = function () {
-    // 1. Update progress card if visible
-    const card = document.getElementById("krono-update-helper");
-    if (card) {
-        card.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <span style="font-weight: 800; font-size: 1.05rem; color: #22C55E;">Download Complete!</span>
-            </div>
-            <p style="font-size: 0.85rem; color: #CBD5E1; margin-bottom: 14px; line-height: 1.45;">
-                Update package is ready to install. Tap below to launch installer now.
-            </p>
-            <div style="display: flex; gap: 8px; justify-content: center;">
-                <button type="button" onclick="triggerInstallNow()" style="flex: 1; padding: 11px 16px; background: #22C55E; color: #000; font-weight: 800; font-size: 0.9rem; border-radius: 10px; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 14px rgba(34,197,94,0.4);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    Install Now
+    const modal = document.getElementById("krono-download-progress-modal");
+    if (modal) {
+        const title = modal.querySelector(".krono-modal-title");
+        const desc = modal.querySelector(".krono-modal-desc");
+        const bar = document.getElementById("krono-progress-bar");
+        const label = document.getElementById("krono-progress-label");
+        const actionBox = document.getElementById("krono-modal-actions");
+        const iconWrap = document.getElementById("krono-modal-icon");
+
+        if (bar) {
+            bar.style.width = "100%";
+            bar.style.background = "#22c55e";
+        }
+        if (label) label.textContent = "100% Ready";
+        if (title) title.textContent = "Download Complete!";
+        if (desc) desc.textContent = "The update is downloaded and ready to install. Opening Android Package Installer...";
+        if (iconWrap) {
+            iconWrap.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+        }
+        if (actionBox) {
+            actionBox.innerHTML = `
+                <button type="button" onclick="triggerInstallNow()" style="width: 100%; height: 50px; background: #22c55e; color: #000; font-weight: 800; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 16px rgba(34,197,94,0.4); margin-bottom: 12px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Install Update Now
                 </button>
-                <button type="button" onclick="this.closest('#krono-update-helper').remove()" style="padding: 11px 14px; background: #20202B; color: #94A3B8; font-weight: 600; font-size: 0.85rem; border: 1px solid #3E3E4E; border-radius: 10px; cursor: pointer;">
-                    Close
+                <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 10px 12px; text-align: left; font-size: 0.8rem; color: #94a3b8; line-height: 1.45; margin-bottom: 12px;">
+                    <b style="color: #38bdf8;">Tip:</b> If Android asks to <i>"Allow from this source"</i>, toggle the switch ON and tap Back. Krono will install immediately.
+                </div>
+                <button type="button" onclick="document.getElementById('krono-download-progress-modal').remove()" style="background: transparent; border: none; color: #64748b; font-size: 0.84rem; cursor: pointer; text-decoration: underline;">
+                    Close Window
                 </button>
-            </div>
-        `;
+            `;
+        }
     }
 
-    // 2. Update floating banner button if visible
+    // Update banner button if visible
     const banner = document.getElementById("apk-update-banner");
     if (banner) {
         const btn = banner.querySelector("button");
         if (btn) {
             btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Install Now';
-            btn.style.background = "#22C55E";
+            btn.style.background = "#22c55e";
             btn.style.color = "#000000";
             btn.style.opacity = "1";
             btn.disabled = false;
             btn.onclick = triggerInstallNow;
+        }
+    }
+};
+
+window.onKronoDownloadError = function (msg) {
+    const modal = document.getElementById("krono-download-progress-modal");
+    if (modal) {
+        const title = modal.querySelector(".krono-modal-title");
+        const desc = modal.querySelector(".krono-modal-desc");
+        const actionBox = document.getElementById("krono-modal-actions");
+        if (title) title.textContent = "Download Incomplete";
+        if (desc) desc.textContent = msg || "Connection was interrupted. Tap below to retry or install via browser.";
+        if (actionBox) {
+            actionBox.innerHTML = `
+                <button type="button" onclick="triggerApkUpdate()" style="width: 100%; height: 46px; background: #2563eb; color: #fff; font-weight: 700; font-size: 0.95rem; border: none; border-radius: 12px; cursor: pointer; margin-bottom: 10px;">
+                    Retry Download
+                </button>
+                <button type="button" onclick="openExternalBrowser(GITHUB_DIRECT_APK_URL)" style="width: 100%; height: 42px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; font-weight: 700; font-size: 0.88rem; cursor: pointer; margin-bottom: 10px;">
+                    Install via Browser
+                </button>
+                <button type="button" onclick="document.getElementById('krono-download-progress-modal').remove()" style="background: transparent; border: none; color: #64748b; font-size: 0.84rem; cursor: pointer;">
+                    Cancel
+                </button>
+            `;
         }
     }
 };
@@ -133,14 +178,14 @@ function showApkToast(msg) {
     if (!toast) {
         toast = document.createElement("div");
         toast.id = "apk-update-toast";
-        toast.style.cssText = "position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 99999999; background: #1e1b4b; color: #38bdf8; border: 2px solid #38bdf8; padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 0.9rem; box-shadow: 0 10px 30px rgba(0,0,0,0.8); text-align: center; max-width: 90%; transition: opacity 0.3s ease;";
+        toast.style.cssText = "position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 99999999; background: #0f172a; color: #38bdf8; border: 1.5px solid #38bdf8; padding: 12px 22px; border-radius: 14px; font-weight: 700; font-size: 0.9rem; box-shadow: 0 10px 30px rgba(0,0,0,0.8); text-align: center; max-width: 90%; transition: opacity 0.3s ease;";
         document.body.appendChild(toast);
     }
     toast.textContent = msg;
     toast.style.opacity = "1";
     setTimeout(function () {
         if (toast) toast.style.opacity = "0";
-    }, 6000);
+    }, 5000);
 }
 
 function copyApkDownloadLink() {
@@ -155,71 +200,69 @@ function copyApkDownloadLink() {
     }
 }
 
-function showUpdateProgressCard(targetUrl) {
-    let card = document.getElementById("krono-update-helper");
-    if (card) card.remove();
-
-    card = document.createElement("div");
-    card.id = "krono-update-helper";
-    card.style.cssText = "position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 999999; width: min(92vw, 420px); background: #0E0E12; border: 1.5px solid #38BDF8; border-radius: 16px; padding: 18px 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: center; color: #FAFAFA; font-family: system-ui, sans-serif;";
-    card.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
-            <svg class="krono-icon krono-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
-            <span style="font-weight: 700; font-size: 1rem; color: #FAFAFA;">Downloading Update (53 KB)...</span>
-        </div>
-        <p style="font-size: 0.84rem; color: #94A3B8; margin-bottom: 14px; line-height: 1.45;">
-            Package installer will launch automatically. If on an older build, tap below to open in your browser to install immediately.
-        </p>
-        <div style="display: flex; gap: 8px; justify-content: center;">
-            <button type="button" onclick="openExternalBrowser(GITHUB_DIRECT_APK_URL)" style="flex: 1; padding: 10px 14px; background: #2563EB; color: #FFF; font-weight: 700; font-size: 0.85rem; border: none; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Install via Browser
-            </button>
-            <button type="button" onclick="this.closest('#krono-update-helper').remove()" style="padding: 10px 14px; background: #20202B; color: #94A3B8; font-weight: 600; font-size: 0.85rem; border: 1px solid #3E3E4E; border-radius: 10px; cursor: pointer;">
-                Close
-            </button>
-        </div>
-    `;
-    document.body.appendChild(card);
-}
-
 function triggerApkUpdate() {
     const isApk = isAndroidWebViewOrApk();
     const targetUrl = window.location.origin + "/download/Krono.apk";
 
-    // 1. Immediately provide visual feedback on the update banner button
+    // Dismiss announcement modal if open
+    const prevModal = document.getElementById("krono-update-modal");
+    if (prevModal) prevModal.remove();
+    const prevPopup = document.getElementById("ultra-update-popup");
+    if (prevPopup) prevPopup.remove();
+
+    // Render dedicated Progress Modal
+    let progressModal = document.getElementById("krono-download-progress-modal");
+    if (progressModal) progressModal.remove();
+
+    progressModal = document.createElement("div");
+    progressModal.id = "krono-download-progress-modal";
+    progressModal.style.cssText = "position: fixed; inset: 0; z-index: 9999999; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; padding: 20px;";
+    progressModal.innerHTML = `
+        <div style="background: #111827; border: 1.5px solid #38bdf8; border-radius: 20px; max-width: 420px; width: 100%; padding: 26px 22px; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.85); color: #f8fafc; font-family: system-ui, sans-serif;">
+            <div id="krono-modal-icon" style="display: flex; justify-content: center; margin-bottom: 14px;">
+                <svg class="krono-spin" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+            </div>
+            <h3 class="krono-modal-title" style="font-size: 1.35rem; font-weight: 800; margin-bottom: 8px; color: #f8fafc;">Downloading Update...</h3>
+            <p class="krono-modal-desc" style="color: #94a3b8; font-size: 0.88rem; line-height: 1.45; margin-bottom: 18px;">
+                Downloading signed Krono update (~58 KB). Please keep Krono open.
+            </p>
+            <div style="background: #1e293b; border: 1px solid #334155; border-radius: 10px; height: 12px; overflow: hidden; margin-bottom: 10px; position: relative;">
+                <div id="krono-progress-bar" style="height: 100%; width: 15%; background: linear-gradient(90deg, #38bdf8, #818cf8); border-radius: 10px; transition: width 0.3s ease;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #64748b; font-weight: 700; margin-bottom: 20px;">
+                <span>Krono Package</span>
+                <span id="krono-progress-label">Connecting...</span>
+            </div>
+            <div id="krono-modal-actions">
+                <button type="button" onclick="openExternalBrowser(GITHUB_DIRECT_APK_URL)" style="width: 100%; height: 42px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download via Browser Fallback
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(progressModal);
+
+    // Update banner button if visible
     const banner = document.getElementById("apk-update-banner");
     if (banner) {
         const btn = banner.querySelector("button");
         if (btn) {
-            btn.innerHTML = '<svg class="krono-icon krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg> Downloading (53 KB)...';
+            btn.innerHTML = '<svg class="krono-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg> Downloading...';
             btn.style.opacity = "0.85";
             btn.disabled = true;
         }
     }
 
-    // Dismiss static modal popup
-    sessionStorage.setItem("apk_update_popup_dismissed", "1");
-    const popup = document.getElementById("ultra-update-popup");
-    if (popup) popup.remove();
-
-    showApkToast("Downloading Krono update... Installer will open shortly.");
-
-    // 2. Call native AndroidApp download bridge
+    // Call native AndroidApp download bridge
     if (window.AndroidApp && typeof window.AndroidApp.downloadUpdate === "function") {
         window.AndroidApp.downloadUpdate(targetUrl);
-        setTimeout(function () {
-            if (window.onKronoDownloadComplete) {
-                window.onKronoDownloadComplete();
-            }
-        }, 2500);
     } else {
+        // Fallback for external browser or PWA
         window.location.href = GITHUB_DIRECT_APK_URL;
     }
-
-    // 3. Display interactive update helper card
-    showUpdateProgressCard(targetUrl);
 }
+
 
 function triggerPwaInstall() {
     if (deferredInstallPrompt) {
@@ -381,19 +424,87 @@ function showCopyFeedback() {
     }
 }
 
+function compareSemVer(v1, v2) {
+    const p1 = (v1 || "0").split(".").map(function (n) { return parseInt(n, 10) || 0; });
+    const p2 = (v2 || "0").split(".").map(function (n) { return parseInt(n, 10) || 0; });
+    const len = Math.max(p1.length, p2.length);
+    for (let i = 0; i < len; i++) {
+        const n1 = p1[i] || 0;
+        const n2 = p2[i] || 0;
+        if (n1 > n2) return 1;
+        if (n1 < n2) return -1;
+    }
+    return 0;
+}
+window.compareSemVer = compareSemVer;
+
 function isAndroidWebViewOrApk() {
     const ua = navigator.userAgent || "";
     return (
         window.AndroidApp !== undefined ||
         /UltraPortalApp/i.test(ua) ||
+        /KronoApp/i.test(ua) ||
         (/Android/i.test(ua) && /; wv\)/i.test(ua))
     );
 }
 
-// In-App APK Version & Auto-Update Checker (Strictly isolated to Android APK / WebView)
+window.openKronoUpdateModal = function () {
+    const data = window.__kronoLatestData || { latest_version: "3.2", version_code: 14 };
+    let installedVer = "3.1";
+    if (window.AndroidApp && typeof window.AndroidApp.getAppVersion === "function") {
+        installedVer = window.AndroidApp.getAppVersion();
+    }
+
+    let modal = document.getElementById("krono-update-modal");
+    if (modal) modal.remove();
+
+    modal = document.createElement("div");
+    modal.id = "krono-update-modal";
+    modal.style.cssText = "position: fixed; inset: 0; z-index: 9999999; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; padding: 20px;";
+    modal.innerHTML = `
+        <div style="background: #111827; border: 2px solid #38bdf8; border-radius: 22px; max-width: 440px; width: 100%; padding: 28px 24px; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.85); color: #f8fafc; font-family: system-ui, sans-serif;">
+            <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+                <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(56, 189, 248, 0.15); border: 1.5px solid rgba(56, 189, 248, 0.4); display: flex; align-items: center; justify-content: center;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 9V4s3.03.55 4 2c1.08 1.62 0 5 0 5"/></svg>
+                </div>
+            </div>
+            <div style="display: inline-block; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; margin-bottom: 10px; letter-spacing: 0.05em;">
+                OFFICIAL KRONO UPDATE READY
+            </div>
+            <h3 style="color: #f8fafc; font-size: 1.45rem; font-weight: 800; margin-bottom: 6px;">Krono v${data.latest_version}</h3>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; margin-bottom: 16px;">
+                <span>Installed: <b style="color: #cbd5e1;">v${installedVer}</b></span>
+                <span style="color: #38bdf8;">➔</span>
+                <span>Latest: <b style="color: #4ade80;">v${data.latest_version}</b></span>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(51, 65, 85, 0.8); border-radius: 12px; padding: 14px 16px; text-align: left; margin-bottom: 20px; font-size: 0.82rem; color: #cbd5e1; line-height: 1.5;">
+                <b style="color: #38bdf8; display: block; margin-bottom: 6px;">What's New in v${data.latest_version}:</b>
+                <ul style="margin-left: 18px; margin-bottom: 0;">
+                    <li>Studio UI Overhaul: Cosmic Slate Dark + Alabaster Mist Light Mode</li>
+                    <li>Floating Mobile Island Dock navigation with frosted glass blur</li>
+                    <li>Streamlined 1-Click native APK installer with auto-resuming permissions</li>
+                    <li>Real-time download progress tracking and instant installer launch</li>
+                </ul>
+            </div>
+            <button type="button" onclick="triggerApkUpdate()" style="width: 100%; height: 50px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; font-weight: 800; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 20px rgba(37,99,235,0.45); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Update App Now (1-Click)
+            </button>
+            <button type="button" onclick="copyApkDownloadLink()" style="width: 100%; height: 42px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                Copy Direct Download Link
+            </button>
+            <button type="button" onclick="sessionStorage.setItem('apk_update_dismissed_v' + '${data.latest_version}', '1'); document.getElementById('krono-update-modal').remove();" style="background: transparent; border: none; color: #64748b; font-size: 0.84rem; cursor: pointer; text-decoration: underline;">
+                Remind Me Later
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+// In-App APK Version & Auto-Update Checker
 function checkApkUpdate() {
     if (!isAndroidWebViewOrApk()) {
-        const stalePopup = document.getElementById("ultra-update-popup");
+        const stalePopup = document.getElementById("krono-update-modal") || document.getElementById("ultra-update-popup");
         if (stalePopup) stalePopup.remove();
         const staleBanner = document.getElementById("apk-update-banner");
         if (staleBanner) staleBanner.remove();
@@ -403,21 +514,32 @@ function checkApkUpdate() {
     fetch("/api/app-version?t=" + Date.now(), { cache: "no-store" })
         .then(function (r) { return r.json(); })
         .then(function (data) {
+            window.__kronoLatestData = data;
+
+            let installedCode = 0;
             let installedVer = "2.0";
-            if (window.AndroidApp && typeof window.AndroidApp.getAppVersion === "function") {
-                installedVer = window.AndroidApp.getAppVersion();
+            if (window.AndroidApp) {
+                if (typeof window.AndroidApp.getAppVersionCode === "function") {
+                    installedCode = parseInt(window.AndroidApp.getAppVersionCode(), 10) || 0;
+                }
+                if (typeof window.AndroidApp.getAppVersion === "function") {
+                    installedVer = window.AndroidApp.getAppVersion();
+                }
             } else {
-                const match = navigator.userAgent.match(/UltraPortalApp\/([\d\.]+)/);
+                const match = navigator.userAgent.match(/(?:UltraPortalApp|KronoApp)\/([\d\.]+)/);
                 if (match) {
                     installedVer = match[1];
-                } else {
-                    installedVer = "2.0";
                 }
             }
 
+            const latestCode = parseInt(data.version_code, 10) || 0;
+            const isUpdateAvailable = (installedCode > 0 && latestCode > 0)
+                ? (installedCode < latestCode)
+                : (compareSemVer(installedVer, data.latest_version) < 0);
+
             const verBadge = document.getElementById("apk-version-badge");
             if (verBadge) {
-                if (parseFloat(installedVer) >= parseFloat(data.latest_version)) {
+                if (!isUpdateAvailable) {
                     verBadge.textContent = "v" + installedVer + " (Latest Up-to-Date)";
                     verBadge.style.color = "#4ade80";
                 } else {
@@ -426,34 +548,34 @@ function checkApkUpdate() {
                 }
             }
 
-            // Whenever installed version is older, display high-visibility 1-click update modal, banner & badge highlights
-            if (parseFloat(installedVer) < parseFloat(data.latest_version)) {
+            if (isUpdateAvailable) {
                 // 1. Highlight header & sidebar badges as clickable update triggers
                 const appBadges = document.querySelectorAll(".app-badge");
                 appBadges.forEach(function (badge) {
                     badge.innerHTML = "UPDATE v" + data.latest_version;
-                    badge.style.background = "linear-gradient(135deg, #d97706, #b45309)";
+                    badge.style.background = "linear-gradient(135deg, #0284c7, #7c3aed)";
                     badge.style.color = "#ffffff";
                     badge.style.cursor = "pointer";
-                    badge.style.border = "1px solid #f59e0b";
-                    badge.onclick = triggerApkUpdate;
+                    badge.style.border = "1px solid #38bdf8";
+                    badge.style.boxShadow = "0 0 12px rgba(56, 189, 248, 0.5)";
+                    badge.onclick = window.openKronoUpdateModal;
                 });
 
-                // 2. Trigger native Android notification if Java bridge is available
+                // 2. Trigger native Android notification via Java bridge
                 if (window.AndroidApp && typeof window.AndroidApp.showNativeNotification === "function") {
                     window.AndroidApp.showNativeNotification(
                         "Krono v" + data.latest_version + " Ready!",
-                        "Tap to install the latest update with faster login & new features."
+                        "Tap to install the latest Krono update with 1-click speed & mobile navigation."
                     );
                 }
 
-                // 3. Fallback: Browser/Web Push System Notification if permission is granted
+                // 3. Fallback: Browser/Web Push System Notification
                 try {
                     if ("Notification" in window && Notification.permission === "granted") {
                         if (navigator.serviceWorker && navigator.serviceWorker.ready) {
                             navigator.serviceWorker.ready.then(function (reg) {
                                 reg.showNotification("Krono Update (v" + data.latest_version + ") Ready!", {
-                                    body: "Tap to update your app with 5x faster login & automatic SGPA records.",
+                                    body: "Tap to install the latest update with 1-click speed & mobile navigation.",
                                     icon: "/static/icons/icon-192.png",
                                     badge: "/static/icons/icon-192.png",
                                     data: { url: "/update" }
@@ -463,45 +585,18 @@ function checkApkUpdate() {
                     }
                 } catch (e) {}
 
-                // 4. Render prominent centered modal popup dialog (once per session)
-                if (!sessionStorage.getItem("apk_update_popup_dismissed") && !document.getElementById("ultra-update-popup")) {
-                    const popup = document.createElement("div");
-                    popup.id = "ultra-update-popup";
-                    popup.style.cssText = "position: fixed; inset: 0; z-index: 9999999; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 20px;";
-                    popup.innerHTML = `
-                        <div style="background: #111827; border: 2px solid #38bdf8; border-radius: 20px; max-width: 400px; width: 100%; padding: 26px 22px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
-                            <div style="display: flex; justify-content: center; margin-bottom: 12px;"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 9V4s3.03.55 4 2c1.08 1.62 0 5 0 5"/></svg></div>
-                            <div style="display: inline-block; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px; letter-spacing: 0.04em;">NEW UPDATE READY</div>
-                            <h3 style="color: #f8fafc; font-size: 1.35rem; font-weight: 800; margin-bottom: 8px;">Krono v${data.latest_version}</h3>
-                            <p style="color: #94a3b8; font-size: 0.88rem; line-height: 1.45; margin-bottom: 18px;">
-                                Your installed app is <b>v${installedVer}</b>. An updated version is available with <b>5x faster login</b>, <b>automated SGPA marksheets</b>, and mobile fixes!
-                            </p>
-                            <button type="button" onclick="triggerApkUpdate()" style="width: 100%; height: 48px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; font-weight: 800; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(37,99,235,0.4);">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Update App Now (1-Click)
-                            </button>
-                            <button type="button" onclick="copyApkDownloadLink()" style="width: 100%; height: 40px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Copy Direct Download Link
-                            </button>
-                            <button type="button" onclick="sessionStorage.setItem('apk_update_popup_dismissed', '1'); document.getElementById('ultra-update-popup').remove();" style="background: transparent; border: none; color: #64748b; font-size: 0.84rem; cursor: pointer; text-decoration: underline;">
-                                Remind Me Later
-                            </button>
-                        </div>
-                    `;
-                    document.body.appendChild(popup);
-                }
-
-                // 5. Fixed Top Floating Banner
+                // 4. Render Fixed Top Floating Banner
                 if (!document.getElementById("apk-update-banner")) {
                     const banner = document.createElement("div");
                     banner.id = "apk-update-banner";
-                    banner.style.cssText = "position: fixed; top: 0; left: 0; right: 0; z-index: 999998; background: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%); border-bottom: 2px solid #38bdf8; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.5);";
+                    banner.style.cssText = "position: fixed; top: 0; left: 0; right: 0; z-index: 999998; background: linear-gradient(135deg, #0b1120 0%, #1e1b4b 100%); border-bottom: 2px solid #38bdf8; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; box-shadow: 0 4px 25px rgba(0,0,0,0.6);";
                     banner.innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.86rem; color: #f8fafc;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 9V4s3.03.55 4 2c1.08 1.62 0 5 0 5"/></svg>
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.86rem; color: #f8fafc; font-weight: 600;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 9V4s3.03.55 4 2c1.08 1.62 0 5 0 5"/></svg>
                             <span><b>Krono Update (v${data.latest_version})</b> is ready!</span>
                         </div>
                         <div style="display: flex; gap: 8px; align-items: center;">
-                            <button type="button" onclick="triggerApkUpdate()" style="background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff; border: none; cursor: pointer; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.4);">
+                            <button type="button" onclick="triggerApkUpdate()" style="background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff; border: none; cursor: pointer; padding: 7px 16px; border-radius: 9px; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px rgba(37,99,235,0.45);">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> 1-Click Update
                             </button>
                             <button type="button" onclick="this.parentElement.parentElement.remove()" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 0 6px; display: inline-flex; align-items: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -509,10 +604,17 @@ function checkApkUpdate() {
                     `;
                     document.body.prepend(banner);
                 }
+
+                // 5. Render Centered Modal Popup (once per version session)
+                const dismissedKey = "apk_update_dismissed_v" + data.latest_version;
+                if (!sessionStorage.getItem(dismissedKey) && !document.getElementById("krono-update-modal")) {
+                    window.openKronoUpdateModal();
+                }
             }
         })
         .catch(function () {});
 }
+
 
 // Initial setup on load
 document.addEventListener("DOMContentLoaded", function () {

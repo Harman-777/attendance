@@ -5,6 +5,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.OpenableColumns;
 import java.io.File;
@@ -32,6 +33,12 @@ public class GenericFileProvider extends ContentProvider {
         if (extFile.exists() && extFile.length() > 0) {
             return extFile;
         }
+        try {
+            File dlFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Krono.apk");
+            if (dlFile.exists() && dlFile.length() > 0) {
+                return dlFile;
+            }
+        } catch (Exception ignored) {}
         return null;
     }
 
